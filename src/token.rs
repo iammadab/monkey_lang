@@ -1,4 +1,5 @@
-enum TokenType {
+#[derive(PartialEq, Debug)]
+pub(crate) enum TokenType {
     ILLEGAL,
     EOF,
 
@@ -24,8 +25,17 @@ enum TokenType {
     LET,
 }
 
-struct Token {
+#[derive(PartialEq, Debug)]
+pub(crate) struct Token {
     variant: TokenType,
-    // TODO: this should be optional, not all variants need a literal
     literal: String,
+}
+
+impl Token {
+    pub(crate) fn new(variant: TokenType, literal: &str) -> Self {
+        Self {
+            variant,
+            literal: literal.to_string(),
+        }
+    }
 }
