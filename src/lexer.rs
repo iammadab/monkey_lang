@@ -1,38 +1,24 @@
 use crate::token::{Token, TokenType};
+use std::str::Chars;
 
-// TODO: refactor lexer to use an iterator
-struct Lexer {
-    input: Vec<char>,
-    curr_position: usize,
-    next_position: usize,
-    curr_char: char,
+const NULL_CHAR: char = '\0';
+
+struct Lexer<'a> {
+    input: Chars<'a>,
 }
 
-impl Lexer {
-    fn new(input: &str) -> Self {
-        Self {
-            input: input.chars().collect(),
-            curr_position: 0,
-            next_position: 0,
-            // TODO: factor out the null char
-            curr_char: '\0',
-        }
+impl<'a> Lexer<'a> {
+    fn new(input: Chars<'a>) -> Self {
+        Self { input }
     }
 
-    // TODO: could we use an iterator instead??
-    fn read_next_char(&mut self) {
-        if self.next_position >= self.input.len() {
-            self.curr_char = '\0';
-        } else {
-            self.curr_char = self.input[self.next_position];
-        }
-        self.curr_position = self.next_position;
-        self.next_position += 1;
+    fn read_next_char(&mut self) -> char {
+        self.input.next().unwrap_or(NULL_CHAR)
     }
 
+    // TODO: implement proper error handling
     fn next_token(&mut self) -> Token {
-        self.read_next_char();
-        match self.curr_char {
+        match self.read_next_char() {
             '=' => Token::new(TokenType::ASSIGN, "="),
             ';' => Token::new(TokenType::SEMICOLON, ";"),
             '(' => Token::new(TokenType::LEFTPAREN, "("),
@@ -41,9 +27,8 @@ impl Lexer {
             '+' => Token::new(TokenType::PLUS, "+"),
             '{' => Token::new(TokenType::LEFTBRACE, "{"),
             '}' => Token::new(TokenType::RIGHTBRACE, "}"),
-            '\0' => Token::new(TokenType::EOF, ""),
-            // TODO: do proper error handling
-            _ => panic!("unexpected char {}", self.curr_char),
+            NULL_CHAR => Token::new(TokenType::EOF, ""),
+            actual_char => panic!("unexpected char {}", actual_char),
         }
     }
 }
@@ -55,7 +40,7 @@ mod tests {
     #[test]
     fn next_token() {
         let input = "=+(){},;";
-        let mut lexer = Lexer::new(input);
+        let mut lexer = Lexer::new(input.chars());
 
         assert_eq!(lexer.next_token(), Token::new(TokenType::ASSIGN, "="));
         assert_eq!(lexer.next_token(), Token::new(TokenType::PLUS, "+"));
