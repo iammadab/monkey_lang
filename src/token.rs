@@ -1,4 +1,19 @@
 #[derive(PartialEq, Debug)]
+pub(crate) struct Token {
+    variant: TokenType,
+    literal: String,
+}
+
+impl Token {
+    pub(crate) fn new(variant: TokenType, literal: &str) -> Self {
+        Self {
+            variant,
+            literal: literal.to_string(),
+        }
+    }
+}
+
+#[derive(PartialEq, Debug)]
 pub(crate) enum TokenType {
     ILLEGAL,
     EOF,
@@ -23,19 +38,4 @@ pub(crate) enum TokenType {
     // Keywords
     FUNCTION,
     LET,
-}
-
-#[derive(PartialEq, Debug)]
-pub(crate) struct Token {
-    variant: TokenType,
-    literal: String,
-}
-
-impl Token {
-    pub(crate) fn new(variant: TokenType, literal: &str) -> Self {
-        Self {
-            variant,
-            literal: literal.to_string(),
-        }
-    }
 }
