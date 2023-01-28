@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 #[derive(PartialEq, Debug)]
-pub(crate) struct Token {
-    variant: TokenType,
+pub struct Token {
+    pub variant: TokenType,
     literal: String,
 }
 
@@ -16,7 +16,7 @@ impl Token {
 }
 
 #[derive(PartialEq, Debug, Clone)]
-pub(crate) enum TokenType {
+pub enum TokenType {
     ILLEGAL,
     EOF,
 

@@ -4,18 +4,18 @@ use std::str::Chars;
 
 const NULL_CHAR: char = '\0';
 
-struct Lexer<'a> {
+pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
 }
 
 impl<'a> Lexer<'a> {
-    fn new(input: Chars<'a>) -> Self {
+    pub fn new(input: Chars<'a>) -> Self {
         Self {
             input: input.peekable(),
         }
     }
 
-    fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Token {
         self.skip_white_space();
 
         match self.peek_next_char() {
