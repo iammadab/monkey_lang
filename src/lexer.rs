@@ -17,9 +17,8 @@ impl<'a> Lexer<'a> {
 
     // TODO: implement proper error handling
     fn next_token(&mut self) -> Token {
-        // we could peek the next char instead
-        // then read it when writing the literal
-        // with the peek we can do the identifier thing without losing the first
+        self.skip_white_space();
+
         match self.peek_next_char() {
             '=' => Token::new(TokenType::ASSIGN, &self.read_next_char_as_string()),
             ';' => Token::new(TokenType::SEMICOLON, &self.read_next_char_as_string()),
@@ -40,6 +39,9 @@ impl<'a> Lexer<'a> {
                     let identifier = self.read_identifier();
                     let identifier_token_type = look_up_ident(&identifier);
                     Token::new(identifier_token_type, &identifier)
+                } else if char_value.is_numeric() {
+                    let number = self.read_number();
+                    Token::new(TokenType::INT, &number)
                 } else {
                     Token::new(TokenType::ILLEGAL, &char_value.to_string())
                 }
@@ -59,6 +61,12 @@ impl<'a> Lexer<'a> {
         self.input.peek().unwrap_or(&NULL_CHAR)
     }
 
+    fn skip_white_space(&mut self) {
+        while self.peek_next_char().is_whitespace() {
+            self.read_next_char();
+        }
+    }
+
     fn read_identifier(&mut self) -> String {
         // keep reading chars as long as they are alphabetic
         let mut identifier = String::new();
@@ -66,6 +74,14 @@ impl<'a> Lexer<'a> {
             identifier.push(self.read_next_char())
         }
         identifier
+    }
+
+    fn read_number(&mut self) -> String {
+        let mut number = String::new();
+        while self.peek_next_char().is_numeric() {
+            number.push(self.read_next_char())
+        }
+        number
     }
 }
 
@@ -102,5 +118,8 @@ mod tests {
         let mut lexer = Lexer::new(input.chars());
 
         assert_eq!(lexer.next_token(), Token::new(TokenType::LET, "let"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::IDENT, "five"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::ASSIGN, "="));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "5"));
     }
 }
