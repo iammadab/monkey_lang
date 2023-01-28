@@ -19,14 +19,33 @@ impl<'a> Lexer<'a> {
         self.skip_white_space();
 
         match self.peek_next_char() {
-            '=' => Token::new(TokenType::ASSIGN, &self.read_next_char_as_string()),
+            '=' => {
+                // TODO: refactor
+                let mut curr = self.read_next_char_as_string();
+                if self.peek_next_char() == &'=' {
+                    curr.push_str(&self.read_next_char_as_string());
+                    Token::new(TokenType::EQUAL, &curr)
+                } else {
+                    Token::new(TokenType::ASSIGN, &curr)
+                }
+            }
             ';' => Token::new(TokenType::SEMICOLON, &self.read_next_char_as_string()),
             '(' => Token::new(TokenType::LEFTPAREN, &self.read_next_char_as_string()),
             ')' => Token::new(TokenType::RIGHTPAREN, &self.read_next_char_as_string()),
             ',' => Token::new(TokenType::COMMA, &self.read_next_char_as_string()),
             '+' => Token::new(TokenType::PLUS, &self.read_next_char_as_string()),
             '-' => Token::new(TokenType::MINUS, &self.read_next_char_as_string()),
-            '!' => Token::new(TokenType::BANG, &self.read_next_char_as_string()),
+            '!' => {
+                // TODO: refactor
+                let mut curr = self.read_next_char_as_string();
+                if self.peek_next_char() == &'=' {
+                    curr.push_str(&self.read_next_char_as_string());
+                    Token::new(TokenType::NOTEQUAL, &curr)
+                } else {
+                    Token::new(TokenType::BANG, &curr)
+                }
+            }
+
             '*' => Token::new(TokenType::ASTERISK, &self.read_next_char_as_string()),
             '/' => Token::new(TokenType::SLASH, &self.read_next_char_as_string()),
             '<' => Token::new(TokenType::LESSTHAN, &self.read_next_char_as_string()),
@@ -131,7 +150,11 @@ mod tests {
                 return true;\
              } else {\
                 return false;\
-            }";
+            }\
+            \
+            10 == 10;\
+            10 != 9;";
+
         let mut lexer = Lexer::new(input.chars());
 
         assert_eq!(lexer.next_token(), Token::new(TokenType::LET, "let"));
@@ -199,6 +222,14 @@ mod tests {
         assert_eq!(lexer.next_token(), Token::new(TokenType::FALSE, "false"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::RIGHTBRACE, "}"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "10"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::EQUAL, "=="));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "10"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "10"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::NOTEQUAL, "!="));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "9"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::EOF, ""));
     }
 }

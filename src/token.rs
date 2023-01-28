@@ -34,6 +34,8 @@ pub(crate) enum TokenType {
 
     LESSTHAN,
     GREATERTHAN,
+    EQUAL,
+    NOTEQUAL,
 
     // Delimiters
     COMMA,
