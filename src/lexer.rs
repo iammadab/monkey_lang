@@ -26,6 +26,13 @@ impl<'a> Lexer<'a> {
             ')' => Token::new(TokenType::RIGHTPAREN, &self.read_next_char_as_string()),
             ',' => Token::new(TokenType::COMMA, &self.read_next_char_as_string()),
             '+' => Token::new(TokenType::PLUS, &self.read_next_char_as_string()),
+            '-' => Token::new(TokenType::MINUS, &self.read_next_char_as_string()),
+            '!' => Token::new(TokenType::BANG, &self.read_next_char_as_string()),
+            '*' => Token::new(TokenType::ASTERISK, &self.read_next_char_as_string()),
+            // TODO; what is the use of slash??
+            '/' => Token::new(TokenType::SLASH, &self.read_next_char_as_string()),
+            '<' => Token::new(TokenType::LESSTHAN, &self.read_next_char_as_string()),
+            '>' => Token::new(TokenType::GREATERTHAN, &self.read_next_char_as_string()),
             '{' => Token::new(TokenType::LEFTBRACE, &self.read_next_char_as_string()),
             '}' => Token::new(TokenType::RIGHTBRACE, &self.read_next_char_as_string()),
 
@@ -53,6 +60,7 @@ impl<'a> Lexer<'a> {
         self.read_while(|c| c.is_alphabetic())
     }
 
+    // TODO: we should be able to read non integer numbers also
     fn read_number(&mut self) -> String {
         self.read_while(|c| c.is_numeric())
     }
@@ -108,7 +116,7 @@ mod tests {
     }
 
     #[test]
-    fn next_token_medium_case() {
+    fn next_token_complex_case() {
         // this will use strings that look like monkey_lang
         // will make use of identifiers too
         let input = "let five = 5;\
@@ -116,7 +124,11 @@ mod tests {
             let add = fn(x, y) {\
                 x + y;\
             };\
-            let result = add(five, ten);";
+            \
+            let result = add(five, ten);\
+            !-/*5;\
+            5 < 10 > 5;\
+            ";
         let mut lexer = Lexer::new(input.chars());
 
         assert_eq!(lexer.next_token(), Token::new(TokenType::LET, "let"));
@@ -154,6 +166,18 @@ mod tests {
         assert_eq!(lexer.next_token(), Token::new(TokenType::COMMA, ","));
         assert_eq!(lexer.next_token(), Token::new(TokenType::IDENT, "ten"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::RIGHTPAREN, ")"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::BANG, "!"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::MINUS, "-"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::SLASH, "/"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::ASTERISK, "*"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "5"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "5"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::LESSTHAN, "<"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "10"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::GREATERTHAN, ">"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "5"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::EOF, ""));
     }

@@ -27,6 +27,13 @@ pub(crate) enum TokenType {
     // Operators
     ASSIGN,
     PLUS,
+    MINUS,
+    BANG,
+    ASTERISK,
+    SLASH,
+
+    LESSTHAN,
+    GREATERTHAN,
 
     // Delimiters
     COMMA,
