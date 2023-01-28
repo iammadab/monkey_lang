@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(PartialEq, Debug)]
 pub(crate) struct Token {
     variant: TokenType,
@@ -13,7 +15,7 @@ impl Token {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub(crate) enum TokenType {
     ILLEGAL,
     EOF,
@@ -38,4 +40,11 @@ pub(crate) enum TokenType {
     // Keywords
     FUNCTION,
     LET,
+}
+
+pub(crate) fn look_up_ident(ident: &str) -> TokenType {
+    let keyword_map: HashMap<&str, TokenType> =
+        HashMap::from([("fn", TokenType::FUNCTION), ("let", TokenType::LET)]);
+
+    keyword_map.get(ident).cloned().unwrap_or(TokenType::IDENT)
 }
