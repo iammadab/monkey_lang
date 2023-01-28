@@ -20,40 +20,27 @@ impl<'a> Lexer<'a> {
 
         match self.peek_next_char() {
             '=' => {
-                // TODO: refactor
-                let mut curr = self.read_next_char_as_string();
-                if self.peek_next_char() == &'=' {
-                    curr.push_str(&self.read_next_char_as_string());
-                    Token::new(TokenType::EQUAL, &curr)
-                } else {
-                    Token::new(TokenType::ASSIGN, &curr)
-                }
+                self.build_new_token_optional_double_char(TokenType::ASSIGN, &'=', TokenType::EQUAL)
             }
-            ';' => Token::new(TokenType::SEMICOLON, &self.read_next_char_as_string()),
-            '(' => Token::new(TokenType::LEFTPAREN, &self.read_next_char_as_string()),
-            ')' => Token::new(TokenType::RIGHTPAREN, &self.read_next_char_as_string()),
-            ',' => Token::new(TokenType::COMMA, &self.read_next_char_as_string()),
-            '+' => Token::new(TokenType::PLUS, &self.read_next_char_as_string()),
-            '-' => Token::new(TokenType::MINUS, &self.read_next_char_as_string()),
-            '!' => {
-                // TODO: refactor
-                let mut curr = self.read_next_char_as_string();
-                if self.peek_next_char() == &'=' {
-                    curr.push_str(&self.read_next_char_as_string());
-                    Token::new(TokenType::NOTEQUAL, &curr)
-                } else {
-                    Token::new(TokenType::BANG, &curr)
-                }
-            }
+            ';' => self.build_new_token(TokenType::SEMICOLON),
+            '(' => self.build_new_token(TokenType::LEFTPAREN),
+            ')' => self.build_new_token(TokenType::RIGHTPAREN),
+            ',' => self.build_new_token(TokenType::COMMA),
+            '+' => self.build_new_token(TokenType::PLUS),
+            '-' => self.build_new_token(TokenType::MINUS),
+            '!' => self.build_new_token_optional_double_char(
+                TokenType::BANG,
+                &'=',
+                TokenType::NOTEQUAL,
+            ),
+            '*' => self.build_new_token(TokenType::ASTERISK),
+            '/' => self.build_new_token(TokenType::SLASH),
+            '<' => self.build_new_token(TokenType::LESSTHAN),
+            '>' => self.build_new_token(TokenType::GREATERTHAN),
+            '{' => self.build_new_token(TokenType::LEFTBRACE),
+            '}' => self.build_new_token(TokenType::RIGHTBRACE),
 
-            '*' => Token::new(TokenType::ASTERISK, &self.read_next_char_as_string()),
-            '/' => Token::new(TokenType::SLASH, &self.read_next_char_as_string()),
-            '<' => Token::new(TokenType::LESSTHAN, &self.read_next_char_as_string()),
-            '>' => Token::new(TokenType::GREATERTHAN, &self.read_next_char_as_string()),
-            '{' => Token::new(TokenType::LEFTBRACE, &self.read_next_char_as_string()),
-            '}' => Token::new(TokenType::RIGHTBRACE, &self.read_next_char_as_string()),
-
-            &NULL_CHAR => Token::new(TokenType::EOF, ""),
+            &NULL_CHAR => Lexer::build_new_token_with_literal(TokenType::EOF, ""),
 
             // if we don't match any above, we should check if it's a letter
             char_value => {
@@ -62,12 +49,12 @@ impl<'a> Lexer<'a> {
                     // read an identifier and return
                     let identifier = self.read_identifier();
                     let identifier_token_type = look_up_ident(&identifier);
-                    Token::new(identifier_token_type, &identifier)
+                    Lexer::build_new_token_with_literal(identifier_token_type, &identifier)
                 } else if char_value.is_numeric() {
                     let number = self.read_number();
-                    Token::new(TokenType::INT, &number)
+                    Lexer::build_new_token_with_literal(TokenType::INT, &number)
                 } else {
-                    Token::new(TokenType::ILLEGAL, &char_value.to_string())
+                    Lexer::build_new_token_with_literal(TokenType::ILLEGAL, &char_value.to_string())
                 }
             }
         }
@@ -109,6 +96,29 @@ impl<'a> Lexer<'a> {
             result.push(self.read_next_char())
         }
         result
+    }
+
+    fn build_new_token(&mut self, token_type: TokenType) -> Token {
+        Token::new(token_type, &self.read_next_char_as_string())
+    }
+
+    fn build_new_token_with_literal(token_type: TokenType, literal: &str) -> Token {
+        Token::new(token_type, literal)
+    }
+
+    fn build_new_token_optional_double_char(
+        &mut self,
+        single_match_token_type: TokenType,
+        expected_next_char: &char,
+        double_match_token_type: TokenType,
+    ) -> Token {
+        let mut matches = self.read_next_char_as_string();
+        if self.peek_next_char() == expected_next_char {
+            matches.push_str(&self.read_next_char_as_string());
+            Lexer::build_new_token_with_literal(double_match_token_type, &matches)
+        } else {
+            Lexer::build_new_token_with_literal(single_match_token_type, &matches)
+        }
     }
 }
 
