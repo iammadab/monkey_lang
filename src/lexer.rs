@@ -15,7 +15,6 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    // TODO: implement proper error handling
     fn next_token(&mut self) -> Token {
         self.skip_white_space();
 
@@ -29,7 +28,6 @@ impl<'a> Lexer<'a> {
             '-' => Token::new(TokenType::MINUS, &self.read_next_char_as_string()),
             '!' => Token::new(TokenType::BANG, &self.read_next_char_as_string()),
             '*' => Token::new(TokenType::ASTERISK, &self.read_next_char_as_string()),
-            // TODO; what is the use of slash??
             '/' => Token::new(TokenType::SLASH, &self.read_next_char_as_string()),
             '<' => Token::new(TokenType::LESSTHAN, &self.read_next_char_as_string()),
             '>' => Token::new(TokenType::GREATERTHAN, &self.read_next_char_as_string()),
@@ -128,7 +126,12 @@ mod tests {
             let result = add(five, ten);\
             !-/*5;\
             5 < 10 > 5;\
-            ";
+            \
+            if (5 < 10) {\
+                return true;\
+             } else {\
+                return false;\
+            }";
         let mut lexer = Lexer::new(input.chars());
 
         assert_eq!(lexer.next_token(), Token::new(TokenType::LET, "let"));
@@ -179,6 +182,23 @@ mod tests {
         assert_eq!(lexer.next_token(), Token::new(TokenType::GREATERTHAN, ">"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "5"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::IF, "if"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::LEFTPAREN, "("));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "5"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::LESSTHAN, "<"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "10"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::RIGHTPAREN, ")"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::LEFTBRACE, "{"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::RETURN, "return"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::TRUE, "true"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::RIGHTBRACE, "}"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::ELSE, "else"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::LEFTBRACE, "{"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::RETURN, "return"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::FALSE, "false"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
+        assert_eq!(lexer.next_token(), Token::new(TokenType::RIGHTBRACE, "}"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::EOF, ""));
     }
 }

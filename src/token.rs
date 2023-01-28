@@ -47,11 +47,23 @@ pub(crate) enum TokenType {
     // Keywords
     FUNCTION,
     LET,
+    TRUE,
+    FALSE,
+    IF,
+    ELSE,
+    RETURN,
 }
 
 pub(crate) fn look_up_ident(ident: &str) -> TokenType {
-    let keyword_map: HashMap<&str, TokenType> =
-        HashMap::from([("fn", TokenType::FUNCTION), ("let", TokenType::LET)]);
+    let keyword_map: HashMap<&str, TokenType> = HashMap::from([
+        ("fn", TokenType::FUNCTION),
+        ("let", TokenType::LET),
+        ("true", TokenType::TRUE),
+        ("false", TokenType::FALSE),
+        ("if", TokenType::IF),
+        ("else", TokenType::ELSE),
+        ("return", TokenType::RETURN),
+    ]);
 
     keyword_map.get(ident).cloned().unwrap_or(TokenType::IDENT)
 }
