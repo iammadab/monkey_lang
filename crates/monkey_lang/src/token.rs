@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Token {
     pub variant: TokenType,
     pub(crate) literal: String,

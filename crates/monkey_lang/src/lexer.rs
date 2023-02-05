@@ -120,6 +120,10 @@ impl<'a> Lexer<'a> {
             Lexer::build_new_token_with_literal(single_match_token_type, &matches)
         }
     }
+
+    pub(crate) fn new_eof_token() -> Token {
+        Token::new(TokenType::EOF, "")
+    }
 }
 
 #[cfg(test)]
