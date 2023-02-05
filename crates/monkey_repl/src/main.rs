@@ -6,7 +6,6 @@ use monkey_lang::token::TokenType;
 fn main() -> io::Result<()> {
     let stdin = io::stdin();
     let mut stdout = io::stdout();
-    let mut stderr = io::stderr();
     let mut input = String::new();
 
     loop {
