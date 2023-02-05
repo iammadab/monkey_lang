@@ -1,21 +1,30 @@
 use crate::token::Token;
 
-trait Node {
+pub(crate) trait Node {
     // TODO: add a default implementation for this
     //  since most nodes have a token associated with them
     //  can assert that by forcing the implementation of the
     //  get_token method
     fn token_literal(&self) -> String;
 }
-trait Statement: Node {}
-trait Expression: Node {}
+pub(crate) trait Statement: Node {}
+pub(crate) trait Expression: Node {}
 
 /// Represents the program as a series of statements
-struct Program<S: Statement> {
-    statements: Vec<S>,
+pub(crate) struct Program {
+    // TODO: maybe make this private with new method
+    pub(crate) statements: Vec<Box<dyn Statement>>,
 }
 
-impl<S: Statement> Node for Program<S> {
+impl Program {
+    pub(crate) fn new() -> Self {
+        Self {
+            statements: Vec::new(),
+        }
+    }
+}
+
+impl Node for Program {
     fn token_literal(&self) -> String {
         if self.statements.is_empty() {
             "".to_string()
@@ -26,9 +35,15 @@ impl<S: Statement> Node for Program<S> {
 }
 
 /// Represents the name of something
-struct Identifier {
+pub(crate) struct Identifier {
     token: Token,
     value: String,
+}
+
+impl Identifier {
+    pub fn new(token: Token, value: String) -> Self {
+        Self { token, value }
+    }
 }
 
 impl Node for Identifier {
@@ -42,16 +57,22 @@ impl Expression for Identifier {}
 /// Represents let statements of the form
 /// let <identifier> = <expression>;
 /// e.g let a = 2;
-struct LetStatement<E: Expression> {
+pub(crate) struct LetStatement {
     token: Token, // weird that we want this, since it's would just be LET
     name: Identifier,
-    value: E,
+    value: Box<dyn Expression>,
 }
 
-impl<E: Expression> Node for LetStatement<E> {
+impl LetStatement {
+    pub fn new(token: Token, name: Identifier, value: Box<dyn Expression>) -> Self {
+        Self { token, name, value }
+    }
+}
+
+impl Node for LetStatement {
     fn token_literal(&self) -> String {
         self.token.literal.clone()
     }
 }
 
-impl<E: Expression> Statement for LetStatement<E> {}
+impl Statement for LetStatement {}

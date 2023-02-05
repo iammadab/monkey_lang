@@ -15,6 +15,8 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    // TODO: maybe return a Result<Option<Token>> here
+    //  were Err means Illegal and None means EOF
     pub fn next_token(&mut self) -> Token {
         self.skip_white_space();
 
