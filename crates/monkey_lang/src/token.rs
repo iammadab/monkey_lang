@@ -3,7 +3,7 @@ use std::collections::HashMap;
 #[derive(PartialEq, Debug)]
 pub struct Token {
     pub variant: TokenType,
-    literal: String,
+    pub(crate) literal: String,
 }
 
 impl Token {
