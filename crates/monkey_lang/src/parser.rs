@@ -3,6 +3,7 @@ use crate::ast::Statement;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 
+// TODO: use a peekable lexer, get rid of current_token and peek_token
 struct Parser<'a> {
     lexer: Lexer<'a>,
     current_token: Token,
