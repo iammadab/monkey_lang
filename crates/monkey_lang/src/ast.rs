@@ -7,6 +7,10 @@ pub(crate) enum Statement {
     /// let <identifier> = <expression>;
     /// e.g let a = 2;
     Let { name: String, value: Expression },
+    /// Represents statements of the form
+    /// return <expression>;
+    /// e.g return 2 + 2;
+    Return { return_value: Expression },
 }
 
 /// Enum representing the different type of expressions we handle
