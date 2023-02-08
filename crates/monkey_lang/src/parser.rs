@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
 
     fn next_token(&mut self) {
         self.current_token = self.peek_token.to_owned();
-        self.peek_token = self.lexer.next_token();
+        self.peek_token = self.lexer.next_token().unwrap();
     }
 
     fn parse_program(&mut self) -> ast::Program {
