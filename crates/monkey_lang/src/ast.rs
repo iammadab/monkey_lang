@@ -18,7 +18,6 @@ pub(crate) enum Expression {
 
 /// Represents the program as a series of statements
 pub(crate) struct Program {
-    // TODO: maybe make this private with new method
     pub(crate) statements: Vec<Statement>,
 }
 

@@ -4,8 +4,6 @@ use std::str::Chars;
 
 const NULL_CHAR: char = '\0';
 
-// TODO: Implement an iterator for the lexer
-//  should stop once we reach the eof
 pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
 }

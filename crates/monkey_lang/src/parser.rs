@@ -45,7 +45,6 @@ impl<'a> Parser<'a> {
     fn parse_program(&mut self) -> Result<ast::Program, Error> {
         let mut program = ast::Program::new();
 
-        // TODO: can we get rid of the while loop?
         while self.lexer.peek() != None {
             self.parse_statement()
                 .map(|statement| program.statements.push(statement))?;
@@ -55,7 +54,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_statement(&mut self) -> Result<Statement, Error> {
-        // TODO: can this be done without the if statement
         if let Some(peek_token) = self.peek_token() {
             match peek_token.variant {
                 TokenType::LET => self.parse_let_statement(),
