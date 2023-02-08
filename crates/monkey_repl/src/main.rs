@@ -17,9 +17,10 @@ fn main() -> io::Result<()> {
         // build a lexer from this and then call parser
         let mut lexer = Lexer::new(input.chars());
 
+        // TODO: get rid of the unwrap
         let mut next_token = lexer.next_token();
-        while !matches!(next_token.variant, TokenType::EOF { .. }) {
-            dbg!(&next_token);
+        while next_token != None {
+            dbg!(&next_token.unwrap());
             next_token = lexer.next_token();
         }
 
