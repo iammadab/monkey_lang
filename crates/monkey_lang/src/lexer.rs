@@ -10,6 +10,14 @@ pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
 }
 
+impl<'a> Iterator for Lexer<'a> {
+   type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+       Some(self.next_token())
+    }
+}
+
 impl<'a> Lexer<'a> {
     pub fn new(input: Chars<'a>) -> Self {
         Self {
@@ -249,5 +257,22 @@ mod tests {
         assert_eq!(lexer.next_token(), Token::new(TokenType::INT, "9"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::SEMICOLON, ";"));
         assert_eq!(lexer.next_token(), Token::new(TokenType::EOF, ""));
+    }
+
+    #[test]
+    fn lexer_as_iterator() {
+        let input = "=+(){},;";
+        let mut lexer = Lexer::new(input.chars());
+        let mut lexer = lexer.into_iter();
+
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::ASSIGN, "=")));
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::PLUS, "+")));
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::LEFTPAREN, "(")));
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::RIGHTPAREN, ")")));
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::LEFTBRACE, "{")));
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::RIGHTBRACE, "}")));
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::COMMA, ",")));
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::SEMICOLON, ";")));
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::EOF, "")));
     }
 }
