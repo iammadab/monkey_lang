@@ -410,4 +410,37 @@ mod tests {
         assert_eq!(lexer.next(), None);
         assert_eq!(lexer.next(), None);
     }
+
+    #[test]
+    fn peekable_lexer() {
+        let input = "=";
+        let mut lexer = Lexer::new(input.chars());
+        let mut peekable_lexer = lexer.peekable();
+
+        // peek should remain the same
+        assert_eq!(
+            peekable_lexer.peek(),
+            Some(&Token::new(TokenType::ASSIGN, "="))
+        );
+        assert_eq!(
+            peekable_lexer.peek(),
+            Some(&Token::new(TokenType::ASSIGN, "="))
+        );
+        assert_eq!(
+            peekable_lexer.peek(),
+            Some(&Token::new(TokenType::ASSIGN, "="))
+        );
+
+        // next should show last peek
+        assert_eq!(
+            peekable_lexer.next(),
+            Some(Token::new(TokenType::ASSIGN, "="))
+        );
+
+        // peek after next should be none
+        assert_eq!(peekable_lexer.peek(), None);
+
+        // next should be none also
+        assert_eq!(peekable_lexer.next(), None);
+    }
 }

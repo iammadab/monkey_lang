@@ -63,18 +63,18 @@ impl<'a> Parser<'a> {
 
         let current_token_clone = self.current_token.clone();
         let current_token_clone_1 = self.current_token.clone();
-        let current_token_clone_2= self.current_token.clone();
+        let current_token_clone_2 = self.current_token.clone();
         let current_token_clone_3 = self.current_token.clone();
 
         let identifier = ast::Identifier::new(
             // TODO: get rid of unwrap
             current_token_clone.unwrap(),
-            current_token_clone_1.unwrap().literal
+            current_token_clone_1.unwrap().literal,
         );
         // TODO: get rid of this
         let identifier_two = ast::Identifier::new(
             current_token_clone_2.unwrap(),
-            current_token_clone_3.unwrap().literal
+            current_token_clone_3.unwrap().literal,
         );
 
         // peek and advance
@@ -89,7 +89,8 @@ impl<'a> Parser<'a> {
         }
 
         // reached the end build the let statement
-        let let_statement = ast::LetStatement::new(let_token.unwrap(), identifier, Box::new(identifier_two));
+        let let_statement =
+            ast::LetStatement::new(let_token.unwrap(), identifier, Box::new(identifier_two));
 
         // TODO: two box, this cannot be good
         Ok(Box::new(let_statement))
