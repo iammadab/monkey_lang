@@ -2,54 +2,79 @@ use crate::ast;
 use crate::ast::Statement;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
+use std::iter::Peekable;
 
-// TODO: use a peekable lexer, get rid of current_token and peek_token
+// TODO: Implement better error handling
+
 struct Parser<'a> {
-    lexer: Lexer<'a>,
-    current_token: Option<Token>,
-    peek_token: Option<Token>,
+    lexer: Peekable<Lexer<'a>>,
 }
 
 impl<'a> Parser<'a> {
     fn new(lexer: Lexer<'a>) -> Self {
         let mut parser = Self {
-            lexer,
-            current_token: None,
-            peek_token: None,
+            lexer: lexer.peekable(),
         };
-        // read the current token and the peek token
-        parser.next_token();
-        parser.next_token();
         parser
     }
 
-    fn next_token(&mut self) {
-        self.current_token = self.peek_token.to_owned();
-        self.peek_token = self.lexer.next_token();
+    fn peek_token(&mut self) -> Option<&Token> {
+        self.lexer.peek()
     }
 
-    fn parse_program(&mut self) -> ast::Program {
+    fn next_token(&mut self) -> Option<Token> {
+        self.lexer.next()
+    }
+
+    fn expect_peek(&mut self, expected_token_variant: TokenType) -> Result<Token, String> {
+        if let Some(peek_token) = self.peek_token() {
+            if peek_token.variant != expected_token_variant {
+                // TODO: return a better error message
+                Err("expected a different token".to_string())
+            } else {
+                // we want to return the actual token
+                self.next_token()
+                    .ok_or("confirmed it is the expected token type".to_string())
+            }
+        } else {
+            // TODO: return a better error message
+            Err("expected a different token".to_string())
+        }
+    }
+
+    fn parse_program(&mut self) -> Result<ast::Program, String> {
         let mut program = ast::Program::new();
-        // TODO: impl better comparison
-        //  better still, get rid of the while loop
-        while self.current_token != None {
+
+        // TODO: can we get rid of the while loop?
+        while self.lexer.peek() != None {
             self.parse_statement()
-                .map(|statement| program.statements.push(statement));
-            self.next_token();
+                .map(|statement| program.statements.push(statement))?;
         }
 
-        program
+        Ok(program)
     }
 
-    // TODO: probably return better error type instead of string
     fn parse_statement(&mut self) -> Result<Box<dyn Statement>, String> {
-        // TODO: get rid of unwrap
-        match self.current_token.as_ref().unwrap().variant {
-            TokenType::LET => self.parse_let_statement(),
-            _ => Err("unexpected token type while parsing statement".to_string()),
+        // TODO: can this be done without the if statement
+        if let Some(peek_token) = self.peek_token() {
+            match peek_token.variant {
+                TokenType::LET => self.parse_let_statement(),
+                _ => Err("unexpected token type while parsing statement".to_string()),
+            }
+        } else {
+            Err("unexpected token type while parsing statement".to_string())
         }
     }
 
+    fn parse_let_statement(&mut self) -> Result<Box<dyn Statement>, String> {
+        // this tries to parse a let statement returning errors as it sees fit
+        let let_token = self.next_token();
+        // how do we do this
+        // the next token should be an i
+        todo!()
+    }
+
+    /*
     fn parse_let_statement(&mut self) -> Result<Box<dyn Statement>, String> {
         // TODO: refactor to be more idiomatic
         //  maybe figure out a way to consume the tokens
@@ -95,6 +120,7 @@ impl<'a> Parser<'a> {
         // TODO: two box, this cannot be good
         Ok(Box::new(let_statement))
     }
+    */
 }
 
 #[cfg(test)]
@@ -102,6 +128,26 @@ mod tests {
     use crate::ast::{Program, Statement};
     use crate::lexer::Lexer;
     use crate::parser::Parser;
+    use crate::token::{Token, TokenType};
+
+    #[test]
+    fn expect_peek() {
+        let input = "x = 5";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+
+        // error condition
+        // TODO: change test case once you update how errors are handled
+        assert_eq!(
+            parser.expect_peek(TokenType::ASSIGN),
+            Err("expected a different token".to_string())
+        );
+
+        assert_eq!(
+            parser.expect_peek(TokenType::IDENT),
+            Ok(Token::new(TokenType::IDENT, "x"))
+        );
+    }
 
     #[test]
     fn parse_let_statements() {
@@ -111,7 +157,7 @@ mod tests {
 
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
-        let program: Program = parser.parse_program();
+        let program = parser.parse_program().expect("should parse successfully");
 
         if program.statements.is_empty() {
             panic!("program statements should not be empty");

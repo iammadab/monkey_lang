@@ -18,6 +18,9 @@ impl Token {
 #[derive(PartialEq, Debug, Clone)]
 pub enum TokenType {
     // TODO: potentially get rid of the illegal variant
+    //  actually we should get rid of this, if the lexer
+    //  hits this while tokenizing, we should return an error
+    //  that gets propagated up
     ILLEGAL,
 
     // Identifiers + literals
