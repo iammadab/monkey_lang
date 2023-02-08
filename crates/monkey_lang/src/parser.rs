@@ -1,5 +1,5 @@
 use crate::ast;
-use crate::ast::{Identifier, LetStatement, Statement};
+use crate::ast::{Expression, Statement};
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 use std::iter::Peekable;
@@ -57,7 +57,7 @@ impl<'a> Parser<'a> {
         Ok(program)
     }
 
-    fn parse_statement(&mut self) -> Result<Box<dyn Statement>, String> {
+    fn parse_statement(&mut self) -> Result<Statement, String> {
         // TODO: can this be done without the if statement
         if let Some(peek_token) = self.peek_token() {
             match peek_token.variant {
@@ -71,11 +71,10 @@ impl<'a> Parser<'a> {
 
     /// Parses statements of the form:
     /// let <identifier> = <expression>;
-    fn parse_let_statement(&mut self) -> Result<Box<dyn Statement>, String> {
-        let let_token = self.expect_next_token(TokenType::LET)?;
+    fn parse_let_statement(&mut self) -> Result<Statement, String> {
+        self.expect_next_token(TokenType::LET)?;
 
         let identifier_token = self.expect_next_token(TokenType::IDENT)?;
-        let identifier = Identifier::new(identifier_token);
 
         self.expect_next_token(TokenType::ASSIGN)?;
 
@@ -86,17 +85,16 @@ impl<'a> Parser<'a> {
         }
 
         // build the let statement
-        Ok(Box::new(LetStatement::new(
-            let_token,
-            identifier.clone(),
-            Box::new(identifier),
-        )))
+        Ok(Statement::Let {
+            name: identifier_token.literal,
+            value: Expression::Identifier("".to_string()),
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Identifier, LetStatement, Program, Statement};
+    use crate::ast::{Expression, Statement};
     use crate::lexer::Lexer;
     use crate::parser::Parser;
     use crate::token::{Token, TokenType};
@@ -137,10 +135,26 @@ mod tests {
             panic!("program should have exactly 3 statements");
         }
 
-        // asserting the actual value seems really difficult
-        // as the test just sees it as a statement, but we see it as a let statement
-
-        // TODO: assert the actual statements
-        // TODO: assert the token literal also, whatever that means
+        assert_eq!(
+            program.statements[0],
+            Statement::Let {
+                name: "x".to_string(),
+                value: Expression::Identifier("".to_string())
+            }
+        );
+        assert_eq!(
+            program.statements[1],
+            Statement::Let {
+                name: "y".to_string(),
+                value: Expression::Identifier("".to_string())
+            }
+        );
+        assert_eq!(
+            program.statements[2],
+            Statement::Let {
+                name: "foobar".to_string(),
+                value: Expression::Identifier("".to_string())
+            }
+        );
     }
 }
