@@ -18,10 +18,10 @@ fn main() -> io::Result<()> {
         let mut lexer = Lexer::new(input.chars());
 
         // TODO: get rid of the unwrap
-        let mut next_token = lexer.next_token().unwrap();
-        while !matches!(next_token.variant, TokenType::EOF { .. }) {
-            dbg!(&next_token);
-            next_token = lexer.next_token().unwrap();
+        let mut next_token = lexer.next_token();
+        while next_token != None {
+            dbg!(&next_token.unwrap());
+            next_token = lexer.next_token();
         }
 
         input.clear();

@@ -52,7 +52,7 @@ impl<'a> Lexer<'a> {
             '{' => self.build_new_token(TokenType::LEFTBRACE),
             '}' => self.build_new_token(TokenType::RIGHTBRACE),
 
-            &NULL_CHAR => Lexer::build_new_token_with_literal(TokenType::EOF, ""),
+            &NULL_CHAR => None,
 
             // if we don't match any above, we should check if it's a letter
             char_value => {
@@ -132,10 +132,6 @@ impl<'a> Lexer<'a> {
             Lexer::build_new_token_with_literal(single_match_token_type, &matches)
         }
     }
-
-    pub(crate) fn new_eof_token() -> Token {
-        Token::new(TokenType::EOF, "")
-    }
 }
 
 #[cfg(test)]
@@ -170,7 +166,7 @@ mod tests {
             lexer.next_token(),
             Some(Token::new(TokenType::SEMICOLON, ";"))
         );
-        assert_eq!(lexer.next_token(), Some(Token::new(TokenType::EOF, "")));
+        assert_eq!(lexer.next_token(), None);
     }
 
     #[test]
@@ -394,7 +390,7 @@ mod tests {
             lexer.next_token(),
             Some(Token::new(TokenType::SEMICOLON, ";"))
         );
-        assert_eq!(lexer.next_token(), Some(Token::new(TokenType::EOF, "")));
+        assert_eq!(lexer.next_token(), None);
     }
 
     #[test]
@@ -411,6 +407,7 @@ mod tests {
         assert_eq!(lexer.next(), Some(Token::new(TokenType::RIGHTBRACE, "}")));
         assert_eq!(lexer.next(), Some(Token::new(TokenType::COMMA, ",")));
         assert_eq!(lexer.next(), Some(Token::new(TokenType::SEMICOLON, ";")));
-        assert_eq!(lexer.next(), Some(Token::new(TokenType::EOF, "")));
+        assert_eq!(lexer.next(), None);
+        assert_eq!(lexer.next(), None);
     }
 }

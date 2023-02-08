@@ -17,8 +17,8 @@ impl Token {
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum TokenType {
+    // TODO: potentially get rid of the illegal variant
     ILLEGAL,
-    EOF,
 
     // Identifiers + literals
     IDENT,
