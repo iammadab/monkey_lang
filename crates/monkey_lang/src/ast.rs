@@ -35,14 +35,14 @@ impl Node for Program {
 }
 
 /// Represents the name of something
+#[derive(Clone)]
 pub(crate) struct Identifier {
     token: Token,
-    value: String,
 }
 
 impl Identifier {
-    pub fn new(token: Token, value: String) -> Self {
-        Self { token, value }
+    pub fn new(token: Token) -> Self {
+        Self { token }
     }
 }
 
@@ -58,9 +58,9 @@ impl Expression for Identifier {}
 /// let <identifier> = <expression>;
 /// e.g let a = 2;
 pub(crate) struct LetStatement {
-    token: Token, // weird that we want this, since it's would just be LET
-    name: Identifier,
-    value: Box<dyn Expression>,
+    pub(crate) token: Token, // weird that we want this, since it's would just be LET
+    pub(crate) name: Identifier,
+    pub(crate) value: Box<dyn Expression>,
 }
 
 impl LetStatement {

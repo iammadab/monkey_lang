@@ -1,5 +1,5 @@
 use crate::ast;
-use crate::ast::Statement;
+use crate::ast::{Identifier, LetStatement, Statement};
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 use std::iter::Peekable;
@@ -22,11 +22,15 @@ impl<'a> Parser<'a> {
         self.lexer.peek()
     }
 
-    fn next_token(&mut self) -> Option<Token> {
-        self.lexer.next()
+    fn next_token(&mut self) -> Result<Token, String> {
+        if let Some(token) = self.lexer.next() {
+            Ok(token)
+        } else {
+            Err("no more tokens".to_string())
+        }
     }
 
-    fn expect_peek(&mut self, expected_token_variant: TokenType) -> Result<Token, String> {
+    fn expect_next_token(&mut self, expected_token_variant: TokenType) -> Result<Token, String> {
         if let Some(peek_token) = self.peek_token() {
             if peek_token.variant != expected_token_variant {
                 // TODO: return a better error message
@@ -34,7 +38,6 @@ impl<'a> Parser<'a> {
             } else {
                 // we want to return the actual token
                 self.next_token()
-                    .ok_or("confirmed it is the expected token type".to_string())
             }
         } else {
             // TODO: return a better error message
@@ -66,72 +69,40 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Parses statements of the form:
+    /// let <identifier> = <expression>;
     fn parse_let_statement(&mut self) -> Result<Box<dyn Statement>, String> {
-        // this tries to parse a let statement returning errors as it sees fit
-        let let_token = self.next_token();
-        // how do we do this
-        // the next token should be an i
-        todo!()
+        let let_token = self.expect_next_token(TokenType::LET)?;
+
+        let identifier_token = self.expect_next_token(TokenType::IDENT)?;
+        let identifier = Identifier::new(identifier_token);
+
+        self.expect_next_token(TokenType::ASSIGN)?;
+
+        // skip all expressions until we hit a semi colon
+        // as we are not handling expressions yet
+        while self.next_token()?.variant != TokenType::SEMICOLON {
+            // do nothing
+        }
+
+        // build the let statement
+        Ok(Box::new(LetStatement::new(
+            let_token,
+            identifier.clone(),
+            Box::new(identifier),
+        )))
     }
-
-    /*
-    fn parse_let_statement(&mut self) -> Result<Box<dyn Statement>, String> {
-        // TODO: refactor to be more idiomatic
-        //  maybe figure out a way to consume the tokens
-        let let_token = self.current_token.clone();
-
-        // peek and advance
-        if self.peek_token.as_ref().unwrap().variant != TokenType::IDENT {
-            return Err("expected identifier".to_string());
-        }
-        self.next_token();
-
-        let current_token_clone = self.current_token.clone();
-        let current_token_clone_1 = self.current_token.clone();
-        let current_token_clone_2 = self.current_token.clone();
-        let current_token_clone_3 = self.current_token.clone();
-
-        let identifier = ast::Identifier::new(
-            // TODO: get rid of unwrap
-            current_token_clone.unwrap(),
-            current_token_clone_1.unwrap().literal,
-        );
-        // TODO: get rid of this
-        let identifier_two = ast::Identifier::new(
-            current_token_clone_2.unwrap(),
-            current_token_clone_3.unwrap().literal,
-        );
-
-        // peek and advance
-        if self.peek_token.as_ref().unwrap().variant != TokenType::ASSIGN {
-            return Err("expected assign token".to_string());
-        }
-        self.next_token();
-
-        // advance until we hit a semi colon
-        while self.current_token.as_ref().unwrap().variant != TokenType::SEMICOLON {
-            self.next_token();
-        }
-
-        // reached the end build the let statement
-        let let_statement =
-            ast::LetStatement::new(let_token.unwrap(), identifier, Box::new(identifier_two));
-
-        // TODO: two box, this cannot be good
-        Ok(Box::new(let_statement))
-    }
-    */
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Program, Statement};
+    use crate::ast::{Identifier, LetStatement, Program, Statement};
     use crate::lexer::Lexer;
     use crate::parser::Parser;
     use crate::token::{Token, TokenType};
 
     #[test]
-    fn expect_peek() {
+    fn expect_next_token() {
         let input = "x = 5";
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
@@ -139,12 +110,12 @@ mod tests {
         // error condition
         // TODO: change test case once you update how errors are handled
         assert_eq!(
-            parser.expect_peek(TokenType::ASSIGN),
+            parser.expect_next_token(TokenType::ASSIGN),
             Err("expected a different token".to_string())
         );
 
         assert_eq!(
-            parser.expect_peek(TokenType::IDENT),
+            parser.expect_next_token(TokenType::IDENT),
             Ok(Token::new(TokenType::IDENT, "x"))
         );
     }
@@ -165,6 +136,9 @@ mod tests {
         if program.statements.len() != 3 {
             panic!("program should have exactly 3 statements");
         }
+
+        // asserting the actual value seems really difficult
+        // as the test just sees it as a statement, but we see it as a let statement
 
         // TODO: assert the actual statements
         // TODO: assert the token literal also, whatever that means
