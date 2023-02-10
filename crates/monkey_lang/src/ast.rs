@@ -11,6 +11,8 @@ pub(crate) enum Statement {
     /// return <expression>;
     /// e.g return 2 + 2;
     Return { return_value: Expression },
+    /// Wrapper for an expression
+    Expression(Expression)
 }
 
 /// Enum representing the different type of expressions we handle
