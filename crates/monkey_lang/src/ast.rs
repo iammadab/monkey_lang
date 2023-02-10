@@ -41,7 +41,7 @@ impl Display for Program {
         let program_strings = self
             .statements
             .iter()
-            .map(|statement| format!("{}", statement))
+            .map(|statement| statement.to_string())
             .collect::<Vec<String>>();
         let program_string = program_strings.join("\n");
         return f.write_str(program_string.as_str());
@@ -85,7 +85,7 @@ mod tests {
             return_value: Expression::Identifier("my_var".to_string()),
         });
         assert_eq!(
-            format!("{}", program),
+            program.to_string(),
             "let my_var = another_var;\n\
             return my_var;"
         );
