@@ -7,6 +7,8 @@ impl<'a> Parser<'a> {
         self.lexer.peek()
     }
 
+    /// Returns the peek token but also returns a bool stating it this token is either
+    /// EOF or a semi colon
     pub(crate) fn peek_token_return_end_status(&mut self) -> (Option<&Token>, bool) {
         if let Some(peek_token) = self.lexer.peek() {
             let is_semicolon = peek_token.variant == TokenType::SEMICOLON;
