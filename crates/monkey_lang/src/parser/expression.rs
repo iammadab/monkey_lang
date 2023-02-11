@@ -15,12 +15,32 @@ impl<'a> Parser<'a> {
     /// Null defintitions are expressions that have nothing to the left of them
     /// e.g. an identifier
     fn parse_null_definition(&mut self) -> Result<Expression, Error> {
-        self.parse_identifier()
+        if let Some(peek_token) = self.peek_token() {
+            match peek_token.variant {
+                TokenType::IDENT => self.parse_identifier(),
+                TokenType::INT => self.parse_integer_literal(),
+                _ => Err(Error::UnexpectedToken(peek_token.literal.clone())),
+            }
+        } else {
+            Err(Error::MissingToken)
+        }
     }
 
+    /// Builds an AST out of an identifier token
     fn parse_identifier(&mut self) -> Result<Expression, Error> {
         let identifier_token = self.expect_next_token(TokenType::IDENT)?;
         Ok(Expression::Identifier(identifier_token.literal))
+    }
+
+    /// Builds an AST out of an integer token
+    fn parse_integer_literal(&mut self) -> Result<Expression, Error> {
+        let int_token = self.expect_next_token(TokenType::INT)?;
+        // need to convert the integer value to an actual integer value
+        let int_value: i64 = int_token
+            .literal
+            .parse()
+            .map_err(|_| Error::InvalidIntValue(int_token.literal))?;
+        Ok(Expression::IntegerLiteral(int_value))
     }
 }
 
@@ -39,5 +59,16 @@ mod tests {
         let expression = parser.parse_expression().unwrap();
 
         assert_eq!(expression, Expression::Identifier("foobar".to_string()));
+    }
+
+    #[test]
+    fn parse_integer_expression() {
+        let input = "5;";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+
+        let expression = parser.parse_expression().unwrap();
+
+        assert_eq!(expression, Expression::IntegerLiteral(5));
     }
 }

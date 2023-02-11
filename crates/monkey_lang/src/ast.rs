@@ -1,5 +1,6 @@
 use crate::token::Token;
 use std::fmt::{Debug, Display, Formatter};
+use thiserror::__private::DisplayAsDisplay;
 
 /// Enum representing the different type of statements we handle
 #[derive(Debug, PartialEq)]
@@ -21,6 +22,8 @@ pub(crate) enum Statement {
 pub(crate) enum Expression {
     /// Represents the name of something
     Identifier(String),
+    /// Represents an integer
+    IntegerLiteral(i64),
 }
 
 /// Represents the program as a series of statements
@@ -65,6 +68,7 @@ impl Display for Expression {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Expression::Identifier(value) => f.write_str(value.as_str()),
+            Expression::IntegerLiteral(value) => f.write_str(&format!("{}", value)),
         }
     }
 }
