@@ -49,6 +49,22 @@ impl Default for Precedence {
     }
 }
 
+impl Precedence {
+    fn get_precedence(token_type: &TokenType) -> Self {
+        match token_type {
+            TokenType::EQUAL => Self::EQUALS,
+            TokenType::NOTEQUAL => Self::EQUALS,
+            TokenType::LESSTHAN => Self::LESSORGREATER,
+            TokenType::GREATERTHAN => Self::LESSORGREATER,
+            TokenType::PLUS => Self::SUM,
+            TokenType::MINUS => Self::SUM,
+            TokenType::SLASH => Self::PRODUCT,
+            TokenType::ASTERISK => Self::PRODUCT,
+            _ => Self::LOWEST
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::error::Error;
