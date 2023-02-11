@@ -2,12 +2,26 @@ use crate::ast::Expression;
 use crate::error::Error;
 use crate::parser::util::Precedence;
 use crate::parser::Parser;
-use crate::token::TokenType;
+use crate::token::{Token, TokenType};
 use std::cmp::Ordering;
 
 impl<'a> Parser<'a> {
     fn parse_expression(&mut self, left_precedence: Precedence) -> Result<Expression, Error> {
-        self.parse_null_definition()
+        // TODO: refactor this
+        let mut left_expression = self.parse_null_definition()?;
+
+        let mut peek_token = self.peek_token_return_err()?;
+        let mut precedence = Precedence::get_precedence(&peek_token.variant);
+        let semicolon = Token::new(TokenType::SEMICOLON, ";");
+
+        // TODO: make semi colons optional
+        while left_precedence < precedence && peek_token != &semicolon {
+            left_expression = self.parse_infix_expression(left_expression)?;
+            peek_token = self.peek_token_return_err()?;
+            precedence = Precedence::get_precedence(&peek_token.variant);
+        }
+
+        Ok(left_expression)
     }
 
     /// Null defintitions are expressions that have nothing to the left of them
@@ -53,6 +67,20 @@ impl<'a> Parser<'a> {
             right: Box::new(right_expression),
         })
     }
+
+    /// Builds an AST out of an infix expression
+    /// e.g. 5 + 5
+    fn parse_infix_expression(&mut self, left_expression: Expression) -> Result<Expression, Error> {
+        let operator_token = self.next_token()?;
+        let operator_precedence = Precedence::get_precedence(&operator_token.variant);
+        let right_expression = self.parse_expression(operator_precedence)?;
+
+        Ok(Expression::Infix {
+            left: Box::new(left_expression),
+            operator: operator_token.literal,
+            right: Box::new(right_expression),
+        })
+    }
 }
 
 #[cfg(test)]
@@ -86,7 +114,7 @@ mod tests {
 
     #[test]
     fn parse_prefix_expressions() {
-        let input = "!wanted";
+        let input = "!wanted;";
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
 
@@ -99,7 +127,7 @@ mod tests {
             }
         );
 
-        let input = "-15";
+        let input = "-15;";
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
 
@@ -113,20 +141,87 @@ mod tests {
         );
     }
 
+    fn parse_expression_input(input: &str) -> String {
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+        expression.to_string()
+    }
+
     #[test]
     fn parse_infix_expressions() {
         let input = "5 + 5;";
-        let lexer = Lexer::new(input.chars());
-        let mut parser = Parser::new(lexer);
+        assert_eq!(parse_expression_input(input), "(5 + 5)");
 
-        let expression = parser.parse_expression(Precedence::default()).unwrap();
+        let input = "5 - 5;";
+        assert_eq!(parse_expression_input(input), "(5 - 5)");
+
+        let input = "5 * 5;";
+        assert_eq!(parse_expression_input(input), "(5 * 5)");
+
+        let input = "5 / 5;";
+        assert_eq!(parse_expression_input(input), "(5 / 5)");
+
+        let input = "5 > 5;";
+        assert_eq!(parse_expression_input(input), "(5 > 5)");
+
+        let input = "5 < 5;";
+        assert_eq!(parse_expression_input(input), "(5 < 5)");
+
+        let input = "5 == 5;";
+        assert_eq!(parse_expression_input(input), "(5 == 5)");
+
+        let input = "5 != 5;";
+        assert_eq!(parse_expression_input(input), "(5 != 5)");
+
+        let input = "5 + 5 * 2 + 2;";
+        assert_eq!(parse_expression_input(input), "((5 + (5 * 2)) + 2)");
+    }
+
+    #[test]
+    fn operator_precedence_parsing() {
+        // TODO: remove semicolons from these tests
+        let input = "-a * b;";
+        assert_eq!(parse_expression_input(input), "((-a) * b)");
+
+        let input = "!-a;";
+        assert_eq!(parse_expression_input(input), "(!(-a))");
+
+        let input = "a + b + c;";
+        assert_eq!(parse_expression_input(input), "((a + b) + c)");
+
+        let input = "a + b - c;";
+        assert_eq!(parse_expression_input(input), "((a + b) - c)");
+
+        let input = "a * b * c;";
+        assert_eq!(parse_expression_input(input), "((a * b) * c)");
+
+        let input = "a * b / c;";
+        assert_eq!(parse_expression_input(input), "((a * b) / c)");
+
+        let input = "a + b / c;";
+        assert_eq!(parse_expression_input(input), "(a + (b / c))");
+
+        let input = "a + b * c + d / e - f;";
         assert_eq!(
-            expression,
-            Expression::Infix {
-                left: Box::new(Expression::IntegerLiteral(5)),
-                operator: "+".to_string(),
-                right: Box::new(Expression::IntegerLiteral(5))
-            }
-        )
+            parse_expression_input(input),
+            "(((a + (b * c)) + (d / e)) - f)"
+        );
+
+        // TODO: handle weird test
+        // let input = "3 + 4; -5 * 5;";
+        // assert_eq!(parse_expression_input(input), "(3 + 4)((-5) * 5)");
+
+        let input = "5 > 4 == 3 < 4;";
+        assert_eq!(parse_expression_input(input), "((5 > 4) == (3 < 4))");
+
+        let input = "5 < 4 != 3 > 4;";
+        assert_eq!(parse_expression_input(input), "((5 < 4) != (3 > 4))");
+
+        let input = "3 + 4 * 5 == 3 * 1 + 4 * 5;";
+        assert_eq!(
+            parse_expression_input(input),
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
+        );
     }
 }

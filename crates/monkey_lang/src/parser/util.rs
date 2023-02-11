@@ -7,6 +7,14 @@ impl<'a> Parser<'a> {
         self.lexer.peek()
     }
 
+    pub(crate) fn peek_token_return_err(&mut self) -> Result<&Token, Error> {
+        if let Some(peek_token) = self.lexer.peek() {
+            Ok(peek_token)
+        } else {
+            Err(Error::MissingToken)
+        }
+    }
+
     pub(crate) fn next_token(&mut self) -> Result<Token, Error> {
         if let Some(token) = self.lexer.next() {
             Ok(token)
@@ -50,7 +58,7 @@ impl Default for Precedence {
 }
 
 impl Precedence {
-    fn get_precedence(token_type: &TokenType) -> Self {
+    pub(crate) fn get_precedence(token_type: &TokenType) -> Self {
         match token_type {
             TokenType::EQUAL => Self::EQUALS,
             TokenType::NOTEQUAL => Self::EQUALS,
@@ -60,7 +68,7 @@ impl Precedence {
             TokenType::MINUS => Self::SUM,
             TokenType::SLASH => Self::PRODUCT,
             TokenType::ASTERISK => Self::PRODUCT,
-            _ => Self::LOWEST
+            _ => Self::LOWEST,
         }
     }
 }

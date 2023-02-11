@@ -83,12 +83,12 @@ impl Display for Expression {
         match self {
             Expression::Identifier(value) => f.write_str(value.as_str()),
             Expression::IntegerLiteral(value) => f.write_str(&format!("{}", value)),
-            Expression::Prefix { operator, right } => f.write_str(&format!("{operator}{right}")),
+            Expression::Prefix { operator, right } => f.write_str(&format!("({operator}{right})")),
             Expression::Infix {
                 left,
                 operator,
                 right,
-            } => f.write_str(&format!("{left}{operator}{right}")),
+            } => f.write_str(&format!("({left} {operator} {right})")),
         }
     }
 }
