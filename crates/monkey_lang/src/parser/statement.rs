@@ -62,6 +62,9 @@ mod tests {
     use crate::lexer::Lexer;
     use crate::parser::Parser;
 
+    // TODO: the tests here should parse statements not programs
+    //  refactor
+
     #[test]
     fn parse_let_statements() {
         let input = "let x = 5;\
