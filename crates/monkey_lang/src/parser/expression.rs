@@ -7,18 +7,27 @@ use std::cmp::Ordering;
 
 impl<'a> Parser<'a> {
     fn parse_expression(&mut self, left_precedence: Precedence) -> Result<Expression, Error> {
-        // TODO: refactor this
+        // TODO: refactor this, heavily
         let mut left_expression = self.parse_null_definition()?;
 
-        let mut peek_token = self.peek_token_return_err()?;
-        let mut precedence = Precedence::get_precedence(&peek_token.variant);
+        // if the peek token is none we should return the left expression
+        let mut peek_token = self.peek_token();
         let semicolon = Token::new(TokenType::SEMICOLON, ";");
+        let mut token_at_end = peek_token.is_none() || peek_token.unwrap() == &semicolon;
+        if token_at_end {
+            return Ok(left_expression);
+        }
+        let mut precedence = Precedence::get_precedence(&peek_token.unwrap().variant);
 
         // TODO: make semi colons optional
-        while left_precedence < precedence && peek_token != &semicolon {
+        while left_precedence < precedence && !token_at_end {
             left_expression = self.parse_infix_expression(left_expression)?;
-            peek_token = self.peek_token_return_err()?;
-            precedence = Precedence::get_precedence(&peek_token.variant);
+            peek_token = self.peek_token();
+            token_at_end = peek_token.is_none() || peek_token.unwrap() == &semicolon;
+            if token_at_end {
+                return Ok(left_expression);
+            }
+            precedence = Precedence::get_precedence(&peek_token.unwrap().variant);
         }
 
         Ok(left_expression)
@@ -181,28 +190,28 @@ mod tests {
     #[test]
     fn operator_precedence_parsing() {
         // TODO: remove semicolons from these tests
-        let input = "-a * b;";
+        let input = "-a * b";
         assert_eq!(parse_expression_input(input), "((-a) * b)");
 
-        let input = "!-a;";
+        let input = "!-a";
         assert_eq!(parse_expression_input(input), "(!(-a))");
 
-        let input = "a + b + c;";
+        let input = "a + b + c";
         assert_eq!(parse_expression_input(input), "((a + b) + c)");
 
-        let input = "a + b - c;";
+        let input = "a + b - c";
         assert_eq!(parse_expression_input(input), "((a + b) - c)");
 
-        let input = "a * b * c;";
+        let input = "a * b * c";
         assert_eq!(parse_expression_input(input), "((a * b) * c)");
 
-        let input = "a * b / c;";
+        let input = "a * b / c";
         assert_eq!(parse_expression_input(input), "((a * b) / c)");
 
-        let input = "a + b / c;";
+        let input = "a + b / c";
         assert_eq!(parse_expression_input(input), "(a + (b / c))");
 
-        let input = "a + b * c + d / e - f;";
+        let input = "a + b * c + d / e - f";
         assert_eq!(
             parse_expression_input(input),
             "(((a + (b * c)) + (d / e)) - f)"
@@ -212,13 +221,13 @@ mod tests {
         // let input = "3 + 4; -5 * 5;";
         // assert_eq!(parse_expression_input(input), "(3 + 4)((-5) * 5)");
 
-        let input = "5 > 4 == 3 < 4;";
+        let input = "5 > 4 == 3 < 4";
         assert_eq!(parse_expression_input(input), "((5 > 4) == (3 < 4))");
 
-        let input = "5 < 4 != 3 > 4;";
+        let input = "5 < 4 != 3 > 4";
         assert_eq!(parse_expression_input(input), "((5 < 4) != (3 > 4))");
 
-        let input = "3 + 4 * 5 == 3 * 1 + 4 * 5;";
+        let input = "3 + 4 * 5 == 3 * 1 + 4 * 5";
         assert_eq!(
             parse_expression_input(input),
             "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
