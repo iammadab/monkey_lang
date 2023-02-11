@@ -1,40 +1,16 @@
-use crate::ast;
 use crate::ast::{Expression, Statement};
 use crate::error::Error;
-use crate::lexer::Lexer;
-use crate::token::{Token, TokenType};
-use std::iter::Peekable;
-
-struct Parser<'a> {
-    lexer: Peekable<Lexer<'a>>,
-}
+use crate::parser::util::Precedence;
+use crate::parser::Parser;
+use crate::token::TokenType;
 
 impl<'a> Parser<'a> {
-    fn new(lexer: Lexer<'a>) -> Self {
-        let mut parser = Self {
-            lexer: lexer.peekable(),
-        };
-        parser
-    }
-
-    // TODO: might be better to keep track of a set of errors
-    fn parse_program(&mut self) -> Result<ast::Program, Error> {
-        let mut program = ast::Program::new();
-
-        while self.lexer.peek() != None {
-            self.parse_statement()
-                .map(|statement| program.statements.push(statement))?;
-        }
-
-        Ok(program)
-    }
-
-    fn parse_statement(&mut self) -> Result<Statement, Error> {
+    pub(crate) fn parse_statement(&mut self) -> Result<Statement, Error> {
         if let Some(peek_token) = self.peek_token() {
             match peek_token.variant {
                 TokenType::LET => self.parse_let_statement(),
                 TokenType::RETURN => self.parse_return_statement(),
-                _ => Err(Error::UnexpectedToken(peek_token.literal.clone())),
+                _ => self.parse_expression_statement(),
             }
         } else {
             Err(Error::MissingToken)
@@ -80,57 +56,22 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn peek_token(&mut self) -> Option<&Token> {
-        self.lexer.peek()
-    }
-
-    fn next_token(&mut self) -> Result<Token, Error> {
-        if let Some(token) = self.lexer.next() {
-            Ok(token)
-        } else {
-            Err(Error::MissingToken)
-        }
-    }
-
-    fn expect_next_token(&mut self, expected_token_variant: TokenType) -> Result<Token, Error> {
-        if let Some(peek_token) = self.peek_token() {
-            if peek_token.variant != expected_token_variant {
-                Err(Error::UnexpectedToken(peek_token.literal.clone()))
-            } else {
-                // we want to return the actual token
-                self.next_token()
-            }
-        } else {
-            Err(Error::MissingToken)
-        }
+    fn parse_expression_statement(&mut self) -> Result<Statement, Error> {
+        let expression = self.parse_expression(Precedence::LOWEST)?;
+        // TODO: handle semicolon
+        self.optional_expect_next_token(TokenType::SEMICOLON);
+        Ok(Statement::Expression(expression))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::ast::{Expression, Statement};
-    use crate::error::Error;
     use crate::lexer::Lexer;
     use crate::parser::Parser;
-    use crate::token::{Token, TokenType};
 
-    #[test]
-    fn expect_next_token() {
-        let input = "x = 5";
-        let lexer = Lexer::new(input.chars());
-        let mut parser = Parser::new(lexer);
-
-        // error condition
-        assert_eq!(
-            parser.expect_next_token(TokenType::ASSIGN),
-            Err(Error::UnexpectedToken("x".to_string()))
-        );
-
-        assert_eq!(
-            parser.expect_next_token(TokenType::IDENT),
-            Ok(Token::new(TokenType::IDENT, "x"))
-        );
-    }
+    // TODO: the tests here should parse statements not programs
+    //  refactor
 
     #[test]
     fn parse_let_statements() {
@@ -195,6 +136,35 @@ mod tests {
             Statement::Return {
                 return_value: Expression::Identifier("".to_string())
             }
+        );
+    }
+
+    #[test]
+    fn parse_expression_statements() {
+        let input = "3 + 4; -5 * 5;";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+
+        assert_eq!(program.statements.len(), 2);
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression(Expression::Infix {
+                left: Box::new(Expression::IntegerLiteral(3)),
+                operator: "+".to_string(),
+                right: Box::new(Expression::IntegerLiteral(4))
+            })
+        );
+        assert_eq!(
+            program.statements[1],
+            Statement::Expression(Expression::Infix {
+                left: Box::new(Expression::Prefix {
+                    operator: "-".to_string(),
+                    right: Box::new(Expression::IntegerLiteral(5))
+                }),
+                operator: "*".to_string(),
+                right: Box::new(Expression::IntegerLiteral(5))
+            })
         );
     }
 }
