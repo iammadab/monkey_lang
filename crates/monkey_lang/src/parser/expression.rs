@@ -6,28 +6,17 @@ use crate::token::{Token, TokenType};
 use std::cmp::Ordering;
 
 impl<'a> Parser<'a> {
+    /// Implementation of the pratt parsing technique
     fn parse_expression(&mut self, left_precedence: Precedence) -> Result<Expression, Error> {
-        // TODO: refactor this, heavily
         let mut left_expression = self.parse_null_definition()?;
 
-        // if the peek token is none we should return the left expression
-        let mut peek_token = self.peek_token();
-        let semicolon = Token::new(TokenType::SEMICOLON, ";");
-        let mut token_at_end = peek_token.is_none() || peek_token.unwrap() == &semicolon;
-        if token_at_end {
-            return Ok(left_expression);
-        }
-        let mut precedence = Precedence::get_precedence(&peek_token.unwrap().variant);
+        let (mut peek_token, mut token_at_end) = self.peek_token_return_end_status();
 
-        // TODO: make semi colons optional
-        while left_precedence < precedence && !token_at_end {
+        while !token_at_end
+            && left_precedence < Precedence::get_precedence(&peek_token.unwrap().variant)
+        {
             left_expression = self.parse_infix_expression(left_expression)?;
-            peek_token = self.peek_token();
-            token_at_end = peek_token.is_none() || peek_token.unwrap() == &semicolon;
-            if token_at_end {
-                return Ok(left_expression);
-            }
-            precedence = Precedence::get_precedence(&peek_token.unwrap().variant);
+            (peek_token, token_at_end) = self.peek_token_return_end_status();
         }
 
         Ok(left_expression)
@@ -217,7 +206,7 @@ mod tests {
             "(((a + (b * c)) + (d / e)) - f)"
         );
 
-        // TODO: handle weird test
+        // TODO: move this to parse program
         // let input = "3 + 4; -5 * 5;";
         // assert_eq!(parse_expression_input(input), "(3 + 4)((-5) * 5)");
 

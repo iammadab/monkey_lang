@@ -7,11 +7,12 @@ impl<'a> Parser<'a> {
         self.lexer.peek()
     }
 
-    pub(crate) fn peek_token_return_err(&mut self) -> Result<&Token, Error> {
+    pub(crate) fn peek_token_return_end_status(&mut self) -> (Option<&Token>, bool) {
         if let Some(peek_token) = self.lexer.peek() {
-            Ok(peek_token)
+            let is_semicolon = peek_token.variant == TokenType::SEMICOLON;
+            (Some(peek_token), is_semicolon)
         } else {
-            Err(Error::MissingToken)
+            (None, true)
         }
     }
 
