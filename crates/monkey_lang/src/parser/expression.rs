@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn parse_prefix_expression() {
-        let input = "!5";
+        let input = "!wanted";
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
 
@@ -92,7 +92,7 @@ mod tests {
             expression,
             Expression::Prefix {
                 operator: "!".to_string(),
-                right: Box::new(Expression::IntegerLiteral(5))
+                right: Box::new(Expression::Identifier("wanted".to_string()))
             }
         );
 
