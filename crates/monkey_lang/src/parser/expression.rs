@@ -1,10 +1,12 @@
 use crate::ast::Expression;
 use crate::error::Error;
+use crate::parser::util::Precedence;
 use crate::parser::Parser;
 use crate::token::TokenType;
+use std::cmp::Ordering;
 
 impl<'a> Parser<'a> {
-    fn parse_expression(&mut self) -> Result<Expression, Error> {
+    fn parse_expression(&mut self, left_precedence: Precedence) -> Result<Expression, Error> {
         self.parse_null_definition()
     }
 
@@ -45,7 +47,7 @@ impl<'a> Parser<'a> {
     /// e.g. -5 or !true
     fn parse_prefix_expression(&mut self) -> Result<Expression, Error> {
         let prefix_token = self.next_token()?;
-        let right_expression = self.parse_expression()?;
+        let right_expression = self.parse_expression(Precedence::PREFIX)?;
         Ok(Expression::Prefix {
             operator: prefix_token.literal,
             right: Box::new(right_expression),
@@ -57,6 +59,7 @@ impl<'a> Parser<'a> {
 mod tests {
     use crate::ast::Expression;
     use crate::lexer::Lexer;
+    use crate::parser::util::Precedence;
     use crate::parser::Parser;
 
     #[test]
@@ -65,7 +68,7 @@ mod tests {
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
 
-        let expression = parser.parse_expression().unwrap();
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
 
         assert_eq!(expression, Expression::Identifier("foobar".to_string()));
     }
@@ -76,18 +79,18 @@ mod tests {
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
 
-        let expression = parser.parse_expression().unwrap();
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
 
         assert_eq!(expression, Expression::IntegerLiteral(5));
     }
 
     #[test]
-    fn parse_prefix_expression() {
+    fn parse_prefix_expressions() {
         let input = "!wanted";
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
 
-        let expression = parser.parse_expression().unwrap();
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
         assert_eq!(
             expression,
             Expression::Prefix {
@@ -100,7 +103,7 @@ mod tests {
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
 
-        let expression = parser.parse_expression().unwrap();
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
         assert_eq!(
             expression,
             Expression::Prefix {
@@ -108,5 +111,22 @@ mod tests {
                 right: Box::new(Expression::IntegerLiteral(15))
             }
         );
+    }
+
+    #[test]
+    fn parse_infix_expressions() {
+        let input = "5 + 5;";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+        assert_eq!(
+            expression,
+            Expression::Infix {
+                left: Box::new(Expression::IntegerLiteral(5)),
+                operator: "+".to_string(),
+                right: Box::new(Expression::IntegerLiteral(5))
+            }
+        )
     }
 }

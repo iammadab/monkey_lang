@@ -24,9 +24,17 @@ pub(crate) enum Expression {
     Identifier(String),
     /// Represents an integer
     IntegerLiteral(i64),
-    /// Holds the prefix to some expression
+    /// Holds a prefix expression of the form
+    /// <prefix><expression>
     /// e.g. -10 where - is the operator and 10 is the right expression
     Prefix {
+        operator: String,
+        right: Box<Expression>,
+    },
+    /// Hods an infix expression of the form
+    /// <expression><operator><expression>
+    Infix {
+        left: Box<Expression>,
         operator: String,
         right: Box<Expression>,
     },
@@ -76,6 +84,11 @@ impl Display for Expression {
             Expression::Identifier(value) => f.write_str(value.as_str()),
             Expression::IntegerLiteral(value) => f.write_str(&format!("{}", value)),
             Expression::Prefix { operator, right } => f.write_str(&format!("{operator}{right}")),
+            Expression::Infix {
+                left,
+                operator,
+                right,
+            } => f.write_str(&format!("{left}{operator}{right}")),
         }
     }
 }

@@ -32,10 +32,28 @@ impl<'a> Parser<'a> {
     }
 }
 
+#[derive(PartialEq, PartialOrd)]
+pub(crate) enum Precedence {
+    LOWEST,
+    EQUALS,        // ==
+    LESSORGREATER, // > or <
+    SUM,           // +
+    PRODUCT,       // *
+    PREFIX,        // -X or !X
+    CALL,          // fn(X)
+}
+
+impl Default for Precedence {
+    fn default() -> Self {
+        Self::LOWEST
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::error::Error;
     use crate::lexer::Lexer;
+    use crate::parser::util::Precedence;
     use crate::parser::Parser;
     use crate::token::{Token, TokenType};
 
@@ -55,5 +73,14 @@ mod tests {
             parser.expect_next_token(TokenType::IDENT),
             Ok(Token::new(TokenType::IDENT, "x"))
         );
+    }
+
+    #[test]
+    fn precedence_ordering() {
+        assert!(Precedence::CALL > Precedence::PREFIX);
+        assert!(Precedence::PREFIX > Precedence::PRODUCT);
+        assert!(Precedence::PRODUCT > Precedence::SUM);
+        assert!(Precedence::SUM > Precedence::LESSORGREATER);
+        assert!(Precedence::LESSORGREATER > Precedence::LOWEST);
     }
 }
