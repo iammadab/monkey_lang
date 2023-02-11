@@ -7,5 +7,5 @@ pub(crate) enum Error {
     #[error("expected token, found none")]
     MissingToken,
     #[error("failed to convert {0} to i64 value")]
-    InvalidIntValue(String),
+    InvalidIntegerValue(String),
 }

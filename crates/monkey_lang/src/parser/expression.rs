@@ -5,10 +5,6 @@ use crate::token::TokenType;
 
 impl<'a> Parser<'a> {
     fn parse_expression(&mut self) -> Result<Expression, Error> {
-        // nud - a token that has nothing to it's left e.g. identifiers, integer literals
-        // based on the head token, we need to figure out if there is a nud
-        // parsing function associated with it.
-        // if there is, we should run the parsing function to get the nud
         self.parse_null_definition()
     }
 
@@ -19,6 +15,8 @@ impl<'a> Parser<'a> {
             match peek_token.variant {
                 TokenType::IDENT => self.parse_identifier(),
                 TokenType::INT => self.parse_integer_literal(),
+                TokenType::BANG => self.parse_prefix_expression(),
+                TokenType::MINUS => self.parse_prefix_expression(),
                 _ => Err(Error::UnexpectedToken(peek_token.literal.clone())),
             }
         } else {
@@ -39,8 +37,19 @@ impl<'a> Parser<'a> {
         let int_value: i64 = int_token
             .literal
             .parse()
-            .map_err(|_| Error::InvalidIntValue(int_token.literal))?;
+            .map_err(|_| Error::InvalidIntegerValue(int_token.literal))?;
         Ok(Expression::IntegerLiteral(int_value))
+    }
+
+    /// Builds an AST out of a prefix expression
+    /// e.g. -5 or !true
+    fn parse_prefix_expression(&mut self) -> Result<Expression, Error> {
+        let prefix_token = self.next_token()?;
+        let right_expression = self.parse_expression()?;
+        Ok(Expression::Prefix {
+            operator: prefix_token.literal,
+            right: Box::new(right_expression),
+        })
     }
 }
 
@@ -70,5 +79,34 @@ mod tests {
         let expression = parser.parse_expression().unwrap();
 
         assert_eq!(expression, Expression::IntegerLiteral(5));
+    }
+
+    #[test]
+    fn parse_prefix_expression() {
+        let input = "!5";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+
+        let expression = parser.parse_expression().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Prefix {
+                operator: "!".to_string(),
+                right: Box::new(Expression::IntegerLiteral(5))
+            }
+        );
+
+        let input = "-15";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+
+        let expression = parser.parse_expression().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Prefix {
+                operator: "-".to_string(),
+                right: Box::new(Expression::IntegerLiteral(15))
+            }
+        );
     }
 }
