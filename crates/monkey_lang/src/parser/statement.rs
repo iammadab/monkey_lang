@@ -4,7 +4,6 @@ use crate::parser::Parser;
 use crate::token::TokenType;
 
 impl<'a> Parser<'a> {
-
     pub(crate) fn parse_statement(&mut self) -> Result<Statement, Error> {
         if let Some(peek_token) = self.peek_token() {
             match peek_token.variant {

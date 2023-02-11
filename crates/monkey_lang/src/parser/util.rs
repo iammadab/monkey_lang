@@ -15,7 +15,10 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub(crate) fn expect_next_token(&mut self, expected_token_variant: TokenType) -> Result<Token, Error> {
+    pub(crate) fn expect_next_token(
+        &mut self,
+        expected_token_variant: TokenType,
+    ) -> Result<Token, Error> {
         if let Some(peek_token) = self.peek_token() {
             if peek_token.variant != expected_token_variant {
                 Err(Error::UnexpectedToken(peek_token.literal.clone()))
