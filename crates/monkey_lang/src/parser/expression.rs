@@ -7,7 +7,10 @@ use std::cmp::Ordering;
 
 impl<'a> Parser<'a> {
     /// Implementation of the pratt parsing technique
-    fn parse_expression(&mut self, left_precedence: Precedence) -> Result<Expression, Error> {
+    pub(crate) fn parse_expression(
+        &mut self,
+        left_precedence: Precedence,
+    ) -> Result<Expression, Error> {
         let mut left_expression = self.parse_null_definition()?;
 
         let (mut peek_token, mut token_at_end) = self.peek_token_return_end_status();
@@ -205,10 +208,6 @@ mod tests {
             parse_expression_input(input),
             "(((a + (b * c)) + (d / e)) - f)"
         );
-
-        // TODO: move this to parse program
-        // let input = "3 + 4; -5 * 5;";
-        // assert_eq!(parse_expression_input(input), "(3 + 4)((-5) * 5)");
 
         let input = "5 > 4 == 3 < 4";
         assert_eq!(parse_expression_input(input), "((5 > 4) == (3 < 4))");

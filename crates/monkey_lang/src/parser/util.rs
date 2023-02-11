@@ -41,6 +41,18 @@ impl<'a> Parser<'a> {
             Err(Error::MissingToken)
         }
     }
+
+    /// If expected token is found, it returns that and advances the lexer, else it does nothing
+    pub(crate) fn optional_expect_next_token(
+        &mut self,
+        expected_token_variant: TokenType,
+    ) -> Option<Token> {
+        if let Ok(token) = self.expect_next_token(expected_token_variant) {
+            Some(token)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(PartialEq, PartialOrd)]
