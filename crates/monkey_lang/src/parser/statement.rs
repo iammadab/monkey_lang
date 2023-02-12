@@ -3,6 +3,7 @@ use crate::error::Error;
 use crate::parser::util::Precedence;
 use crate::parser::Parser;
 use crate::token::TokenType;
+use std::os::macos::raw::stat;
 
 impl<'a> Parser<'a> {
     pub(crate) fn parse_statement(&mut self) -> Result<Statement, Error> {
@@ -10,6 +11,7 @@ impl<'a> Parser<'a> {
             match peek_token.variant {
                 TokenType::LET => self.parse_let_statement(),
                 TokenType::RETURN => self.parse_return_statement(),
+                TokenType::LEFTBRACE => self.parse_block_statement(),
                 _ => self.parse_expression_statement(),
             }
         } else {
@@ -56,11 +58,29 @@ impl<'a> Parser<'a> {
         })
     }
 
+    /// Parses expressions, return them as an expression statement
     fn parse_expression_statement(&mut self) -> Result<Statement, Error> {
         let expression = self.parse_expression(Precedence::LOWEST)?;
         // TODO: handle semicolon
         self.optional_expect_next_token(TokenType::SEMICOLON);
         Ok(Statement::Expression(expression))
+    }
+
+    /// Parses statements of the form
+    /// { a; b; c; } where a, b, c are other statements
+    fn parse_block_statement(&mut self) -> Result<Statement, Error> {
+        self.expect_next_token(TokenType::LEFTBRACE)?;
+
+        let mut statements = Vec::new();
+
+        // keep parsing statements until we reach a right brace
+        // TODO: take into account eof, do we need to handle that?
+        // TODO: need something that checks for a token or an end token
+        while self.expect_next_token(TokenType::RIGHTBRACE).is_err() {
+            statements.push(Box::new(self.parse_statement()?));
+        }
+
+        Ok(Statement::Block { statements })
     }
 }
 
@@ -165,6 +185,23 @@ mod tests {
                 operator: "*".to_string(),
                 right: Box::new(Expression::IntegerLiteral(5))
             })
+        );
+    }
+
+    #[test]
+    fn parse_block_statement() {
+        let input = "{ x }";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let statement = parser.parse_statement().unwrap();
+
+        assert_eq!(
+            statement,
+            Statement::Block {
+                statements: vec![Box::new(Statement::Expression(Expression::Identifier(
+                    "x".to_string()
+                )))]
+            }
         );
     }
 }
