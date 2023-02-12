@@ -19,7 +19,6 @@ fn main() -> io::Result<()> {
 
         let mut next_token = lexer.next_token();
         while next_token != None {
-            dbg!(&next_token.unwrap());
             next_token = lexer.next_token();
         }
 

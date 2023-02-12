@@ -8,4 +8,6 @@ pub(crate) enum Error {
     MissingToken,
     #[error("failed to convert {0} to i64 value")]
     InvalidIntegerValue(String),
+    #[error("failed to convert {0} to boolean value")]
+    InvalidBooleanValue(String),
 }
