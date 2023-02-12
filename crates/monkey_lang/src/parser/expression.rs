@@ -34,6 +34,8 @@ impl<'a> Parser<'a> {
                 TokenType::INT => self.parse_integer_literal(),
                 TokenType::BANG => self.parse_prefix_expression(),
                 TokenType::MINUS => self.parse_prefix_expression(),
+                TokenType::TRUE => self.parse_boolean_expression(),
+                TokenType::FALSE => self.parse_boolean_expression(),
                 _ => Err(Error::UnexpectedToken(peek_token.literal.clone())),
             }
         } else {
@@ -82,6 +84,23 @@ impl<'a> Parser<'a> {
             right: Box::new(right_expression),
         })
     }
+
+    /// Builds an AST out of a boolean expression
+    fn parse_boolean_expression(&mut self) -> Result<Expression, Error> {
+        // try to extract true first, if that fails try false
+        let boolean_token = self
+            .expect_next_token(TokenType::TRUE)
+            .or_else(|_| self.expect_next_token(TokenType::FALSE))?;
+
+        // TODO: what about lower case handling
+        let bool_value = match boolean_token.literal.as_str() {
+            "true" => true,
+            "false" => false,
+            _ => Err(Error::InvalidBooleanValue(boolean_token.literal.clone()))?
+        };
+
+        Ok(Expression::Boolean(bool_value))
+    }
 }
 
 #[cfg(test)]
@@ -111,6 +130,21 @@ mod tests {
         let expression = parser.parse_expression(Precedence::default()).unwrap();
 
         assert_eq!(expression, Expression::IntegerLiteral(5));
+    }
+
+    #[test]
+    fn parse_boolean_expression() {
+        let input = "true";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+        assert_eq!(expression, Expression::Boolean(true));
+
+        let input = "false";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+        assert_eq!(expression, Expression::Boolean(false));
     }
 
     #[test]

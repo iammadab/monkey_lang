@@ -38,6 +38,8 @@ pub(crate) enum Expression {
         operator: String,
         right: Box<Expression>,
     },
+    /// Represents a boolean value i.e true or false
+    Boolean(bool),
 }
 
 /// Represents the program as a series of statements
@@ -89,6 +91,7 @@ impl Display for Expression {
                 operator,
                 right,
             } => f.write_str(&format!("({left} {operator} {right})")),
+            Expression::Boolean(value) => f.write_str(&format!("{}", value)),
         }
     }
 }
