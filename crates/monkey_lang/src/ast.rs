@@ -131,7 +131,7 @@ impl Display for Expression {
 }
 
 /// Represents the program as a series of statements
-pub(crate) struct Program {
+pub struct Program {
     pub(crate) statements: Vec<Statement>,
 }
 

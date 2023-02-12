@@ -7,12 +7,12 @@ use crate::error::Error;
 use crate::lexer::Lexer;
 use std::iter::Peekable;
 
-struct Parser<'a> {
+pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>,
 }
 
 impl<'a> Parser<'a> {
-    fn new(lexer: Lexer<'a>) -> Self {
+    pub fn new(lexer: Lexer<'a>) -> Self {
         let mut parser = Self {
             lexer: lexer.peekable(),
         };
@@ -20,7 +20,7 @@ impl<'a> Parser<'a> {
     }
 
     // TODO: might be better to keep track of a set of errors
-    fn parse_program(&mut self) -> Result<Program, Error> {
+    pub fn parse_program(&mut self) -> Result<Program, Error> {
         let mut program = Program::new();
 
         while self.lexer.peek() != None {

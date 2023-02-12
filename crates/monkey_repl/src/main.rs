@@ -1,4 +1,5 @@
 use monkey_lang::lexer::Lexer;
+use monkey_lang::parser::Parser;
 use monkey_lang::token::TokenType;
 use std::io;
 use std::io::Write;
@@ -15,12 +16,11 @@ fn main() -> io::Result<()> {
         stdin.read_line(&mut input)?;
 
         // build a lexer from this and then call parser
-        let mut lexer = Lexer::new(input.chars());
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
 
-        let mut next_token = lexer.next_token();
-        while next_token != None {
-            next_token = lexer.next_token();
-        }
+        println!("{}", program);
 
         input.clear();
     }
