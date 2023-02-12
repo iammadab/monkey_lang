@@ -38,6 +38,7 @@ impl<'a> Parser<'a> {
                 TokenType::FALSE => self.parse_boolean_expression(),
                 TokenType::LEFTPAREN => self.parse_grouped_expression(),
                 TokenType::IF => self.parse_if_expression(),
+                TokenType::FUNCTION => self.parse_function_literal_expression(),
                 _ => Err(Error::UnexpectedToken(peek_token.literal.clone())),
             }
         } else {
@@ -94,7 +95,6 @@ impl<'a> Parser<'a> {
             .expect_next_token(TokenType::TRUE)
             .or_else(|_| self.expect_next_token(TokenType::FALSE))?;
 
-        // TODO: what about lower case handling
         let bool_value = match boolean_token.literal.as_str() {
             "true" => true,
             "false" => false,
@@ -104,7 +104,8 @@ impl<'a> Parser<'a> {
         Ok(Expression::Boolean(bool_value))
     }
 
-    // TODO: add documentation
+    /// Parses grouped expression by bumping up the precedence for group
+    /// expressions
     fn parse_grouped_expression(&mut self) -> Result<Expression, Error> {
         self.expect_next_token(TokenType::LEFTPAREN)?;
         // take as many tokens as we can until we hit the right paren
@@ -117,8 +118,7 @@ impl<'a> Parser<'a> {
         Ok(grouped_expression)
     }
 
-    // TODO: add documentation
-    // TODO: refactor
+    /// Builds an AST for If statements, with an optional else block
     fn parse_if_expression(&mut self) -> Result<Expression, Error> {
         self.expect_next_token(TokenType::IF)?;
 
@@ -135,6 +135,25 @@ impl<'a> Parser<'a> {
             consequence,
             alternative,
         })
+    }
+
+    /// Builds an AST for a function literaal expressoin
+    fn parse_function_literal_expression(&mut self) -> Result<Expression, Error> {
+        self.expect_next_token(TokenType::FUNCTION)?;
+        self.expect_next_token(TokenType::LEFTPAREN)?;
+
+        let mut parameters = Vec::new();
+        while self.expect_next_token(TokenType::RIGHTPAREN).is_err() {
+            let identifier_expression = self.parse_identifier()?;
+            parameters.push(identifier_expression.to_string());
+
+            // TODO: possibility of not enforcing commas here??
+            self.optional_expect_next_token(TokenType::COMMA);
+        }
+
+        let body = self.parse_block()?;
+
+        Ok(Expression::FunctionLiteral { parameters, body })
     }
 }
 
@@ -209,6 +228,59 @@ mod tests {
                 })
             }
         )
+    }
+
+    #[test]
+    fn parse_function_literal() {
+        let input = "fn(x, y) {x + y;}";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+
+        assert_eq!(
+            expression,
+            Expression::FunctionLiteral {
+                parameters: vec!["x".to_string(), "y".to_string()],
+                body: Block {
+                    statements: vec![Statement::Expression(Expression::Infix {
+                        left: Box::new(Expression::Identifier("x".to_string())),
+                        operator: "+".to_string(),
+                        right: Box::new(Expression::Identifier("y".to_string()))
+                    })]
+                }
+            }
+        );
+
+        let input = "fn() {\
+        let a = 2;\
+        let b = a + 1;\
+        }";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+
+        assert_eq!(
+            expression,
+            Expression::FunctionLiteral {
+                parameters: Vec::new(),
+                body: Block {
+                    statements: vec![
+                        Statement::Let {
+                            name: "a".to_string(),
+                            value: Expression::IntegerLiteral(2),
+                        },
+                        Statement::Let {
+                            name: "b".to_string(),
+                            value: Expression::Infix {
+                                left: Box::new(Expression::Identifier("a".to_string())),
+                                operator: "+".to_string(),
+                                right: Box::new(Expression::IntegerLiteral(1))
+                            }
+                        }
+                    ]
+                }
+            }
+        );
     }
 
     #[test]

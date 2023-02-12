@@ -4,6 +4,9 @@ use std::str::Chars;
 
 const NULL_CHAR: char = '\0';
 
+// TODO: look into handling lower case for certain tokens
+//  e.g boolenas ..
+
 pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
 }

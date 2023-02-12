@@ -76,6 +76,11 @@ pub(crate) enum Expression {
         consequence: Block,
         alternative: Option<Block>,
     },
+    /// Represents a function definition
+    FunctionLiteral {
+        parameters: Vec<String>,
+        body: Block,
+    },
 }
 
 impl Display for Expression {
@@ -92,6 +97,8 @@ impl Display for Expression {
             Expression::Boolean(value) => f.write_str(&format!("{}", value)),
             // TODO: do proper printing of the if statements
             Expression::If { .. } => f.write_str("if statement"),
+            // TODO: do proper printing for function literals
+            Expression::FunctionLiteral { .. } => f.write_str("function literal"),
         }
     }
 }
