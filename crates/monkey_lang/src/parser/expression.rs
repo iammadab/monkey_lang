@@ -165,7 +165,7 @@ impl<'a> Parser<'a> {
         Ok(Expression::FunctionLiteral { parameters, body })
     }
 
-    // TODO: add documentation
+    /// Builds an ast for call expressions e.g add(a, b)
     fn parse_call_expression(&mut self, left_expression: Expression) -> Result<Expression, Error> {
         self.expect_next_token(TokenType::LEFTPAREN)?;
         let mut arguments = Vec::new();
