@@ -96,7 +96,7 @@ impl<'a> Parser<'a> {
         let bool_value = match boolean_token.literal.as_str() {
             "true" => true,
             "false" => false,
-            _ => Err(Error::InvalidBooleanValue(boolean_token.literal.clone()))?
+            _ => Err(Error::InvalidBooleanValue(boolean_token.literal.clone()))?,
         };
 
         Ok(Expression::Boolean(bool_value))
@@ -174,6 +174,32 @@ mod tests {
                 right: Box::new(Expression::IntegerLiteral(15))
             }
         );
+
+        let input = "!true;";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+        assert_eq!(
+            expression,
+            Expression::Prefix {
+                operator: "!".to_string(),
+                right: Box::new(Expression::Boolean(true))
+            }
+        );
+
+        let input = "!false";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+        assert_eq!(
+            expression,
+            Expression::Prefix {
+                operator: "!".to_string(),
+                right: Box::new(Expression::Boolean(false))
+            }
+        );
     }
 
     fn parse_expression_input(input: &str) -> String {
@@ -211,6 +237,9 @@ mod tests {
 
         let input = "5 + 5 * 2 + 2;";
         assert_eq!(parse_expression_input(input), "((5 + (5 * 2)) + 2)");
+
+        let input = "true == true";
+        assert_eq!(parse_expression_input(input), "(true == true)");
     }
 
     #[test]
@@ -254,5 +283,17 @@ mod tests {
             parse_expression_input(input),
             "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
         );
+
+        let input = "true";
+        assert_eq!(parse_expression_input(input), "true");
+
+        let input = "false";
+        assert_eq!(parse_expression_input(input), "false");
+
+        let input = "3 > 5 == false";
+        assert_eq!(parse_expression_input(input), "((3 > 5) == false)");
+
+        let input = "3 < 5 == true";
+        assert_eq!(parse_expression_input(input), "((3 < 5) == true)");
     }
 }
