@@ -36,6 +36,7 @@ impl<'a> Parser<'a> {
                 TokenType::MINUS => self.parse_prefix_expression(),
                 TokenType::TRUE => self.parse_boolean_expression(),
                 TokenType::FALSE => self.parse_boolean_expression(),
+                TokenType::LEFTPAREN => self.parse_grouped_expression(),
                 _ => Err(Error::UnexpectedToken(peek_token.literal.clone())),
             }
         } else {
@@ -100,6 +101,19 @@ impl<'a> Parser<'a> {
         };
 
         Ok(Expression::Boolean(bool_value))
+    }
+
+    // TODO: add documentation
+    fn parse_grouped_expression(&mut self) -> Result<Expression, Error> {
+        self.expect_next_token(TokenType::LEFTPAREN)?;
+        // take as many tokens as we can until we hit the right paren
+        // it will break at right paren, because precedence value for
+        // right paren is also lowest
+        // condition for continuation is left_precedence < right_precedence
+        // lowest !< lowest hence the break
+        let grouped_expression = self.parse_expression(Precedence::LOWEST)?;
+        self.expect_next_token(TokenType::RIGHTPAREN)?;
+        Ok(grouped_expression)
     }
 }
 
@@ -244,7 +258,6 @@ mod tests {
 
     #[test]
     fn operator_precedence_parsing() {
-        // TODO: remove semicolons from these tests
         let input = "-a * b";
         assert_eq!(parse_expression_input(input), "((-a) * b)");
 
@@ -295,5 +308,17 @@ mod tests {
 
         let input = "3 < 5 == true";
         assert_eq!(parse_expression_input(input), "((3 < 5) == true)");
+
+        let input = "1 + (2 + 3) + 4";
+        assert_eq!(parse_expression_input(input), "((1 + (2 + 3)) + 4)");
+
+        let input = "(5 + 5) * 2";
+        assert_eq!(parse_expression_input(input), "((5 + 5) * 2)");
+
+        let input = "2 / (5 + 5)";
+        assert_eq!(parse_expression_input(input), "(2 / (5 + 5))");
+
+        let input = "-(5 + 5)";
+        assert_eq!(parse_expression_input(input), "(-(5 + 5))");
     }
 }
