@@ -11,7 +11,6 @@ impl<'a> Parser<'a> {
             match peek_token.variant {
                 TokenType::LET => self.parse_let_statement(),
                 TokenType::RETURN => self.parse_return_statement(),
-                TokenType::LEFTBRACE => self.parse_block_statement(),
                 _ => self.parse_expression_statement(),
             }
         } else {
@@ -28,16 +27,14 @@ impl<'a> Parser<'a> {
 
         self.expect_next_token(TokenType::ASSIGN)?;
 
-        // skip all expressions until we hit a semi colon
-        // as we are not handling expressions yet
-        while self.next_token()?.variant != TokenType::SEMICOLON {
-            // do nothing
-        }
+        let expression = self.parse_expression(Precedence::LOWEST)?;
+
+        self.expect_next_token(TokenType::SEMICOLON)?;
 
         // build the let statement
         Ok(Statement::Let {
             name: identifier_token.literal,
-            value: Expression::Identifier("".to_string()),
+            value: expression,
         })
     }
 
@@ -46,15 +43,13 @@ impl<'a> Parser<'a> {
     fn parse_return_statement(&mut self) -> Result<Statement, Error> {
         self.expect_next_token(TokenType::RETURN)?;
 
-        // skip all expressions until we hit a semi colon
-        // as we are not handling expressions yet
-        while self.next_token()?.variant != TokenType::SEMICOLON {
-            // do nothing
-        }
+        let expression = self.parse_expression(Precedence::LOWEST)?;
+
+        self.expect_next_token(TokenType::SEMICOLON)?;
 
         // build the return statement
         Ok(Statement::Return {
-            return_value: Expression::Identifier("".to_string()),
+            return_value: expression,
         })
     }
 
@@ -66,9 +61,10 @@ impl<'a> Parser<'a> {
         Ok(Statement::Expression(expression))
     }
 
+    // TODO: move this to a different file
     /// Parses statements of the form
     /// { a; b; c; } where a, b, c are other statements
-    fn parse_block_statement(&mut self) -> Result<Statement, Error> {
+    pub(crate) fn parse_block(&mut self) -> Result<Block, Error> {
         self.expect_next_token(TokenType::LEFTBRACE)?;
 
         let mut statements = Vec::new();
@@ -80,7 +76,7 @@ impl<'a> Parser<'a> {
             statements.push(self.parse_statement()?);
         }
 
-        Ok(Statement::Block(Block { statements }))
+        Ok(Block { statements })
     }
 }
 
@@ -109,21 +105,21 @@ mod tests {
             program.statements[0],
             Statement::Let {
                 name: "x".to_string(),
-                value: Expression::Identifier("".to_string())
+                value: Expression::IntegerLiteral(5)
             }
         );
         assert_eq!(
             program.statements[1],
             Statement::Let {
                 name: "y".to_string(),
-                value: Expression::Identifier("".to_string())
+                value: Expression::IntegerLiteral(10)
             }
         );
         assert_eq!(
             program.statements[2],
             Statement::Let {
                 name: "foobar".to_string(),
-                value: Expression::Identifier("".to_string())
+                value: Expression::IntegerLiteral(838383)
             }
         );
     }
@@ -142,19 +138,19 @@ mod tests {
         assert_eq!(
             program.statements[0],
             Statement::Return {
-                return_value: Expression::Identifier("".to_string())
+                return_value: Expression::IntegerLiteral(5)
             }
         );
         assert_eq!(
             program.statements[1],
             Statement::Return {
-                return_value: Expression::Identifier("".to_string())
+                return_value: Expression::IntegerLiteral(10)
             }
         );
         assert_eq!(
             program.statements[2],
             Statement::Return {
-                return_value: Expression::Identifier("".to_string())
+                return_value: Expression::IntegerLiteral(993322)
             }
         );
     }
@@ -189,19 +185,28 @@ mod tests {
     }
 
     #[test]
-    fn parse_block_statement() {
-        let input = "{ x }";
+    fn parse_block() {
+        let input = "{ x; 2 + 3; let a = 5; }";
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
-        let statement = parser.parse_statement().unwrap();
+        let statement = parser.parse_block().unwrap();
 
         assert_eq!(
             statement,
-            Statement::Block(Block {
-                statements: vec![Statement::Expression(Expression::Identifier(
-                    "x".to_string()
-                ))]
-            })
+            Block {
+                statements: vec![
+                    Statement::Expression(Expression::Identifier("x".to_string())),
+                    Statement::Expression(Expression::Infix {
+                        left: Box::new(Expression::IntegerLiteral(2)),
+                        operator: "+".to_string(),
+                        right: Box::new(Expression::IntegerLiteral(3))
+                    }),
+                    Statement::Let {
+                        name: "a".to_string(),
+                        value: Expression::IntegerLiteral(5)
+                    }
+                ]
+            }
         );
     }
 }

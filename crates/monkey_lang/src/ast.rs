@@ -15,8 +15,32 @@ pub(crate) enum Statement {
     Return { return_value: Expression },
     /// Wrapper for an expression
     Expression(Expression),
-    /// Represents a collection of statements
-    Block(Block),
+    // // TODO: do I really need this here?
+    // /// Represents a collection of statements
+    // Block(Block),
+}
+
+impl Display for Statement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Statement::Let { name, value } => {
+                let statement = format!("let {name} = {value};");
+                f.write_str(&statement)
+            }
+            Statement::Return { return_value } => f.write_str(&format!("return {return_value};")),
+            Statement::Expression(expression) => f.write_str(&format!("{expression};")),
+            // TODO: figure out what you want to do with this
+            // Statement::Block(Block { statements }) => {
+            //     // TODO: handle tabbing
+            //     let block_strings = statements
+            //         .iter()
+            //         .map(|statement| statement.to_string())
+            //         .collect::<Vec<String>>();
+            //     let block_string = block_strings.join("\n");
+            //     f.write_str(block_string.as_str())
+            // }
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -47,8 +71,30 @@ pub(crate) enum Expression {
     },
     /// Represents a boolean value i.e true or false
     Boolean(bool),
-    // Represents an If block, with optional else
-    // If { condition: Box<Expression>, consequence: }
+    /// Represents an If block, with optional else
+    If {
+        condition: Box<Expression>,
+        consequence: Block,
+        alternative: Option<Block>,
+    },
+}
+
+impl Display for Expression {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expression::Identifier(value) => f.write_str(value.as_str()),
+            Expression::IntegerLiteral(value) => f.write_str(&format!("{}", value)),
+            Expression::Prefix { operator, right } => f.write_str(&format!("({operator}{right})")),
+            Expression::Infix {
+                left,
+                operator,
+                right,
+            } => f.write_str(&format!("({left} {operator} {right})")),
+            Expression::Boolean(value) => f.write_str(&format!("{}", value)),
+            // TODO: do proper printing of the if statements
+            Expression::If { .. } => f.write_str("if statement"),
+        }
+    }
 }
 
 /// Represents the program as a series of statements
@@ -73,44 +119,6 @@ impl Display for Program {
             .collect::<Vec<String>>();
         let program_string = program_strings.join("\n");
         f.write_str(program_string.as_str())
-    }
-}
-
-impl Display for Statement {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Statement::Let { name, value } => {
-                let statement = format!("let {name} = {value};");
-                f.write_str(&statement)
-            }
-            Statement::Return { return_value } => f.write_str(&format!("return {return_value};")),
-            Statement::Expression(expression) => f.write_str(&format!("{expression};")),
-            Statement::Block(Block { statements }) => {
-                // TODO: handle tabbing
-                let block_strings = statements
-                    .iter()
-                    .map(|statement| statement.to_string())
-                    .collect::<Vec<String>>();
-                let block_string = block_strings.join("\n");
-                f.write_str(block_string.as_str())
-            }
-        }
-    }
-}
-
-impl Display for Expression {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Expression::Identifier(value) => f.write_str(value.as_str()),
-            Expression::IntegerLiteral(value) => f.write_str(&format!("{}", value)),
-            Expression::Prefix { operator, right } => f.write_str(&format!("({operator}{right})")),
-            Expression::Infix {
-                left,
-                operator,
-                right,
-            } => f.write_str(&format!("({left} {operator} {right})")),
-            Expression::Boolean(value) => f.write_str(&format!("{}", value)),
-        }
     }
 }
 

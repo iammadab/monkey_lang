@@ -37,6 +37,7 @@ impl<'a> Parser<'a> {
                 TokenType::TRUE => self.parse_boolean_expression(),
                 TokenType::FALSE => self.parse_boolean_expression(),
                 TokenType::LEFTPAREN => self.parse_grouped_expression(),
+                TokenType::IF => self.parse_if_expression(),
                 _ => Err(Error::UnexpectedToken(peek_token.literal.clone())),
             }
         } else {
@@ -115,11 +116,31 @@ impl<'a> Parser<'a> {
         self.expect_next_token(TokenType::RIGHTPAREN)?;
         Ok(grouped_expression)
     }
+
+    // TODO: add documentation
+    // TODO: refactor
+    fn parse_if_expression(&mut self) -> Result<Expression, Error> {
+        self.expect_next_token(TokenType::IF)?;
+
+        let condition = Box::new(self.parse_expression(Precedence::LOWEST)?);
+        let consequence = self.parse_block()?;
+        let alternative = if self.expect_next_token(TokenType::ELSE).is_ok() {
+            Some(self.parse_block()?)
+        } else {
+            None
+        };
+
+        Ok(Expression::If {
+            condition,
+            consequence,
+            alternative,
+        })
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::Expression;
+    use crate::ast::{Block, Expression, Statement};
     use crate::lexer::Lexer;
     use crate::parser::util::Precedence;
     use crate::parser::Parser;
@@ -159,6 +180,35 @@ mod tests {
         let mut parser = Parser::new(lexer);
         let expression = parser.parse_expression(Precedence::default()).unwrap();
         assert_eq!(expression, Expression::Boolean(false));
+    }
+
+    #[test]
+    fn parse_if_expression() {
+        let input = "if (x < y) { x }  else { y }";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+
+        assert_eq!(
+            expression,
+            Expression::If {
+                condition: Box::new(Expression::Infix {
+                    left: Box::new(Expression::Identifier("x".to_string())),
+                    operator: "<".to_string(),
+                    right: Box::new(Expression::Identifier("y".to_string()))
+                }),
+                consequence: Block {
+                    statements: vec![Statement::Expression(Expression::Identifier(
+                        "x".to_string()
+                    ))]
+                },
+                alternative: Some(Block {
+                    statements: vec![Statement::Expression(Expression::Identifier(
+                        "y".to_string()
+                    ))]
+                })
+            }
+        )
     }
 
     #[test]
