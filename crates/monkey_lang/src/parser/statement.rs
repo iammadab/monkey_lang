@@ -31,7 +31,6 @@ impl<'a> Parser<'a> {
 
         self.expect_next_token(TokenType::SEMICOLON)?;
 
-        // build the let statement
         Ok(Statement::Let {
             name: identifier_token.literal,
             value: expression,
@@ -47,7 +46,6 @@ impl<'a> Parser<'a> {
 
         self.expect_next_token(TokenType::SEMICOLON)?;
 
-        // build the return statement
         Ok(Statement::Return {
             return_value: expression,
         })

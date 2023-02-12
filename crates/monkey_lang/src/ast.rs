@@ -15,9 +15,6 @@ pub(crate) enum Statement {
     Return { return_value: Expression },
     /// Wrapper for an expression
     Expression(Expression),
-    // // TODO: do I really need this here?
-    // /// Represents a collection of statements
-    // Block(Block),
 }
 
 impl Display for Statement {
@@ -29,16 +26,6 @@ impl Display for Statement {
             }
             Statement::Return { return_value } => f.write_str(&format!("return {return_value};")),
             Statement::Expression(expression) => f.write_str(&format!("{expression};")),
-            // TODO: figure out what you want to do with this
-            // Statement::Block(Block { statements }) => {
-            //     // TODO: handle tabbing
-            //     let block_strings = statements
-            //         .iter()
-            //         .map(|statement| statement.to_string())
-            //         .collect::<Vec<String>>();
-            //     let block_string = block_strings.join("\n");
-            //     f.write_str(block_string.as_str())
-            // }
         }
     }
 }
@@ -46,6 +33,18 @@ impl Display for Statement {
 #[derive(Debug, PartialEq)]
 pub(crate) struct Block {
     pub(crate) statements: Vec<Statement>,
+}
+
+impl Display for Block {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let block_strings = self
+            .statements
+            .iter()
+            .map(|statement| statement.to_string())
+            .collect::<Vec<String>>();
+        let block_string = block_strings.join("\n");
+        f.write_str(block_string.as_str())
+    }
 }
 
 /// Enum representing the different type of expressions we handle
