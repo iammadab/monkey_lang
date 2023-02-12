@@ -15,6 +15,8 @@ pub(crate) enum Statement {
     Return { return_value: Expression },
     /// Wrapper for an expression
     Expression(Expression),
+    /// Represents a collection of statements
+    Block { statements: Vec<Box<Statement>> },
 }
 
 /// Enum representing the different type of expressions we handle
@@ -63,7 +65,7 @@ impl Display for Program {
             .map(|statement| statement.to_string())
             .collect::<Vec<String>>();
         let program_string = program_strings.join("\n");
-        return f.write_str(program_string.as_str());
+        f.write_str(program_string.as_str())
     }
 }
 
@@ -76,6 +78,15 @@ impl Display for Statement {
             }
             Statement::Return { return_value } => f.write_str(&format!("return {return_value};")),
             Statement::Expression(expression) => f.write_str(&format!("{expression};")),
+            Statement::Block { statements } => {
+                // TODO: handle tabbing
+                let block_strings = statements
+                    .iter()
+                    .map(|statement| statement.to_string())
+                    .collect::<Vec<String>>();
+                let block_string = block_strings.join("\n");
+                f.write_str(block_string.as_str())
+            }
         }
     }
 }
