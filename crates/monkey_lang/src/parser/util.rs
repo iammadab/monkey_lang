@@ -83,6 +83,7 @@ impl Precedence {
             TokenType::MINUS => Self::SUM,
             TokenType::SLASH => Self::PRODUCT,
             TokenType::ASTERISK => Self::PRODUCT,
+            TokenType::LEFTPAREN => Self::CALL,
             _ => Self::LOWEST,
         }
     }

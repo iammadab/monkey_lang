@@ -1,5 +1,5 @@
 use crate::token::Token;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{format, Debug, Display, Formatter};
 use thiserror::__private::DisplayAsDisplay;
 
 /// Enum representing the different type of statements we handle
@@ -43,7 +43,7 @@ impl Display for Block {
             .map(|statement| statement.to_string())
             .collect::<Vec<String>>();
         let block_string = block_strings.join("\n");
-        f.write_str(block_string.as_str())
+        f.write_str(&format!("{}", block_string.as_str()))
     }
 }
 
@@ -81,6 +81,11 @@ pub(crate) enum Expression {
         parameters: Vec<String>,
         body: Block,
     },
+    /// Represents a function call
+    FunctionCall {
+        function: Box<Expression>,
+        arguments: Vec<Box<Expression>>,
+    },
 }
 
 impl Display for Expression {
@@ -95,10 +100,32 @@ impl Display for Expression {
                 right,
             } => f.write_str(&format!("({left} {operator} {right})")),
             Expression::Boolean(value) => f.write_str(&format!("{}", value)),
-            // TODO: do proper printing of the if statements
-            Expression::If { .. } => f.write_str("if statement"),
-            // TODO: do proper printing for function literals
-            Expression::FunctionLiteral { .. } => f.write_str("function literal"),
+            Expression::If {
+                condition,
+                consequence,
+                alternative,
+            } => {
+                let if_expression_string = match alternative {
+                    Some(alternative) => format!("if({condition}){consequence} else{alternative}"),
+                    None => format!("if({condition}){consequence}"),
+                };
+                f.write_str(if_expression_string.as_str())
+            }
+            Expression::FunctionLiteral { parameters, body } => {
+                let comma_seperated_parameters = parameters.join(", ");
+                return f.write_str(&format!("fn({comma_seperated_parameters}){body}"));
+            }
+            Expression::FunctionCall {
+                function,
+                arguments,
+            } => {
+                let comma_seperated_arguments = arguments
+                    .iter()
+                    .map(|arg| arg.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                return f.write_str(&format!("{function}({comma_seperated_arguments})"));
+            }
         }
     }
 }

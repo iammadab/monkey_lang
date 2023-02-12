@@ -18,7 +18,7 @@ impl<'a> Parser<'a> {
         while !token_at_end
             && left_precedence < Precedence::get_precedence(&peek_token.unwrap().variant)
         {
-            left_expression = self.parse_infix_expression(left_expression)?;
+            left_expression = self.execute_infix(left_expression)?;
             (peek_token, token_at_end) = self.peek_token_return_end_status();
         }
 
@@ -46,6 +46,29 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Determines what infix function to run based on the next token
+    fn execute_infix(&mut self, left_expression: Expression) -> Result<Expression, Error> {
+        let peek_token = self.peek_token().ok_or(Error::MissingToken)?;
+        match &peek_token.variant {
+            TokenType::LEFTPAREN => self.parse_call_expression(left_expression),
+            _ => self.parse_infix_expression(left_expression),
+        }
+    }
+
+    /// Builds an AST out of an infix expression
+    /// e.g. 5 + 5
+    fn parse_infix_expression(&mut self, left_expression: Expression) -> Result<Expression, Error> {
+        let operator_token = self.next_token()?;
+        let operator_precedence = Precedence::get_precedence(&operator_token.variant);
+        let right_expression = self.parse_expression(operator_precedence)?;
+
+        Ok(Expression::Infix {
+            left: Box::new(left_expression),
+            operator: operator_token.literal,
+            right: Box::new(right_expression),
+        })
+    }
+
     /// Builds an AST out of an identifier token
     fn parse_identifier(&mut self) -> Result<Expression, Error> {
         let identifier_token = self.expect_next_token(TokenType::IDENT)?;
@@ -70,20 +93,6 @@ impl<'a> Parser<'a> {
         let right_expression = self.parse_expression(Precedence::PREFIX)?;
         Ok(Expression::Prefix {
             operator: prefix_token.literal,
-            right: Box::new(right_expression),
-        })
-    }
-
-    /// Builds an AST out of an infix expression
-    /// e.g. 5 + 5
-    fn parse_infix_expression(&mut self, left_expression: Expression) -> Result<Expression, Error> {
-        let operator_token = self.next_token()?;
-        let operator_precedence = Precedence::get_precedence(&operator_token.variant);
-        let right_expression = self.parse_expression(operator_precedence)?;
-
-        Ok(Expression::Infix {
-            left: Box::new(left_expression),
-            operator: operator_token.literal,
             right: Box::new(right_expression),
         })
     }
@@ -154,6 +163,26 @@ impl<'a> Parser<'a> {
         let body = self.parse_block()?;
 
         Ok(Expression::FunctionLiteral { parameters, body })
+    }
+
+    // TODO: add documentation
+    fn parse_call_expression(&mut self, left_expression: Expression) -> Result<Expression, Error> {
+        self.expect_next_token(TokenType::LEFTPAREN)?;
+        let mut arguments = Vec::new();
+
+        while self.expect_next_token(TokenType::RIGHTPAREN).is_err() {
+            let argument_expression = self.parse_expression(Precedence::default());
+            let argument_expression = argument_expression?;
+            arguments.push(Box::new(argument_expression));
+
+            // TODO: possibility of not enforcing commas here??
+            self.optional_expect_next_token(TokenType::COMMA);
+        }
+
+        Ok(Expression::FunctionCall {
+            function: Box::new(left_expression),
+            arguments,
+        })
     }
 }
 
@@ -329,6 +358,34 @@ mod tests {
     }
 
     #[test]
+    fn parse_function_call_expression() {
+        let input = "add(1, 2 * 3, 4 + 5);";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+
+        assert_eq!(
+            expression,
+            Expression::FunctionCall {
+                function: Box::new(Expression::Identifier("add".to_string())),
+                arguments: vec![
+                    Box::new(Expression::IntegerLiteral(1)),
+                    Box::new(Expression::Infix {
+                        left: Box::new(Expression::IntegerLiteral(2)),
+                        operator: "*".to_string(),
+                        right: Box::new(Expression::IntegerLiteral(3)),
+                    }),
+                    Box::new(Expression::Infix {
+                        left: Box::new(Expression::IntegerLiteral(4)),
+                        operator: "+".to_string(),
+                        right: Box::new(Expression::IntegerLiteral(5)),
+                    }),
+                ]
+            }
+        );
+    }
+
+    #[test]
     fn parse_prefix_expressions() {
         let input = "!wanted;";
         let lexer = Lexer::new(input.chars());
@@ -487,5 +544,20 @@ mod tests {
 
         let input = "-(5 + 5)";
         assert_eq!(parse_expression_input(input), "(-(5 + 5))");
+
+        let input = "a + add(b * c) + d";
+        assert_eq!(parse_expression_input(input), "((a + add((b * c))) + d)");
+
+        let input = "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))";
+        assert_eq!(
+            parse_expression_input(input),
+            "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"
+        );
+
+        let input = "add(a + b + c * d / f + g)";
+        assert_eq!(
+            parse_expression_input(input),
+            "add((((a + b) + ((c * d) / f)) + g))"
+        );
     }
 }
