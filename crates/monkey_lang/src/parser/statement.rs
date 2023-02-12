@@ -1,4 +1,4 @@
-use crate::ast::{Expression, Statement};
+use crate::ast::{Block, Expression, Statement};
 use crate::error::Error;
 use crate::parser::util::Precedence;
 use crate::parser::Parser;
@@ -77,16 +77,16 @@ impl<'a> Parser<'a> {
         // TODO: take into account eof, do we need to handle that?
         // TODO: need something that checks for a token or an end token
         while self.expect_next_token(TokenType::RIGHTBRACE).is_err() {
-            statements.push(Box::new(self.parse_statement()?));
+            statements.push(self.parse_statement()?);
         }
 
-        Ok(Statement::Block { statements })
+        Ok(Statement::Block(Block { statements }))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Expression, Statement};
+    use crate::ast::{Block, Expression, Statement};
     use crate::lexer::Lexer;
     use crate::parser::Parser;
 
@@ -197,11 +197,11 @@ mod tests {
 
         assert_eq!(
             statement,
-            Statement::Block {
-                statements: vec![Box::new(Statement::Expression(Expression::Identifier(
+            Statement::Block(Block {
+                statements: vec![Statement::Expression(Expression::Identifier(
                     "x".to_string()
-                )))]
-            }
+                ))]
+            })
         );
     }
 }

@@ -16,7 +16,12 @@ pub(crate) enum Statement {
     /// Wrapper for an expression
     Expression(Expression),
     /// Represents a collection of statements
-    Block { statements: Vec<Box<Statement>> },
+    Block(Block),
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct Block {
+    pub(crate) statements: Vec<Statement>,
 }
 
 /// Enum representing the different type of expressions we handle
@@ -42,6 +47,8 @@ pub(crate) enum Expression {
     },
     /// Represents a boolean value i.e true or false
     Boolean(bool),
+    // Represents an If block, with optional else
+    // If { condition: Box<Expression>, consequence: }
 }
 
 /// Represents the program as a series of statements
@@ -78,7 +85,7 @@ impl Display for Statement {
             }
             Statement::Return { return_value } => f.write_str(&format!("return {return_value};")),
             Statement::Expression(expression) => f.write_str(&format!("{expression};")),
-            Statement::Block { statements } => {
+            Statement::Block(Block { statements }) => {
                 // TODO: handle tabbing
                 let block_strings = statements
                     .iter()
