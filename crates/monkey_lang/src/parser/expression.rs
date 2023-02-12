@@ -281,6 +281,51 @@ mod tests {
                 }
             }
         );
+
+        let input = "fn() {}";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+
+        assert_eq!(
+            expression,
+            Expression::FunctionLiteral {
+                parameters: Vec::new(),
+                body: Block {
+                    statements: Vec::new()
+                }
+            }
+        );
+
+        let input = "fn(x) {}";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+
+        assert_eq!(
+            expression,
+            Expression::FunctionLiteral {
+                parameters: vec!["x".to_string()],
+                body: Block {
+                    statements: Vec::new()
+                }
+            }
+        );
+
+        let input = "fn(x, y, z) {}";
+        let lexer = Lexer::new(input.chars());
+        let mut parser = Parser::new(lexer);
+        let expression = parser.parse_expression(Precedence::default()).unwrap();
+
+        assert_eq!(
+            expression,
+            Expression::FunctionLiteral {
+                parameters: vec!["x".to_string(), "y".to_string(), "z".to_string()],
+                body: Block {
+                    statements: Vec::new()
+                }
+            }
+        );
     }
 
     #[test]
