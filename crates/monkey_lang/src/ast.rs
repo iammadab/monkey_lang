@@ -43,7 +43,7 @@ impl Display for Block {
             .map(|statement| statement.to_string())
             .collect::<Vec<String>>();
         let block_string = block_strings.join("\n");
-        f.write_str(&format!("{}", block_string.as_str()))
+        f.write_str(&format!("{{{}}}", block_string.as_str()))
     }
 }
 
