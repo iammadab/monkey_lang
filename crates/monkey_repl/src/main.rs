@@ -4,6 +4,7 @@ use monkey_lang::token::TokenType;
 use std::io;
 use std::io::Write;
 
+// TODO: if you encounter a parse error pretty print it
 fn main() -> io::Result<()> {
     let stdin = io::stdin();
     let mut stdout = io::stdout();

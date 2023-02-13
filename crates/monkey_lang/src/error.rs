@@ -2,6 +2,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum Error {
+    // TODO: add the expected token to this
     #[error("unexpected token: {0}")]
     UnexpectedToken(String),
     #[error("expected token, found none")]
