@@ -11,4 +11,6 @@ pub enum Error {
     InvalidIntegerValue(String),
     #[error("failed to convert {0} to boolean value")]
     InvalidBooleanValue(String),
+    #[error("failed to convert {0} to prefix operator")]
+    InvalidPrefixOperator(String),
 }

@@ -80,7 +80,7 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Block, Expression, Statement};
+    use crate::ast::{Block, Expression, PrefixOperator, Statement};
     use crate::lexer::Lexer;
     use crate::parser::Parser;
 
@@ -173,7 +173,7 @@ mod tests {
             program.statements[1],
             Statement::Expression(Expression::Infix {
                 left: Box::new(Expression::Prefix {
-                    operator: "-".to_string(),
+                    operator: PrefixOperator::NEGATE,
                     right: Box::new(Expression::IntegerLiteral(5))
                 }),
                 operator: "*".to_string(),

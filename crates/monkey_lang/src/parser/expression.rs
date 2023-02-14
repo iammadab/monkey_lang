@@ -92,7 +92,7 @@ impl<'a> Parser<'a> {
         let prefix_token = self.next_token()?;
         let right_expression = self.parse_expression(Precedence::PREFIX)?;
         Ok(Expression::Prefix {
-            operator: prefix_token.literal,
+            operator: prefix_token.literal.try_into()?,
             right: Box::new(right_expression),
         })
     }
@@ -188,7 +188,7 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Block, Expression, Statement};
+    use crate::ast::{Block, Expression, PrefixOperator, Statement};
     use crate::lexer::Lexer;
     use crate::parser::util::Precedence;
     use crate::parser::Parser;
@@ -395,7 +395,7 @@ mod tests {
         assert_eq!(
             expression,
             Expression::Prefix {
-                operator: "!".to_string(),
+                operator: PrefixOperator::BANG,
                 right: Box::new(Expression::Identifier("wanted".to_string()))
             }
         );
@@ -408,7 +408,7 @@ mod tests {
         assert_eq!(
             expression,
             Expression::Prefix {
-                operator: "-".to_string(),
+                operator: PrefixOperator::NEGATE,
                 right: Box::new(Expression::IntegerLiteral(15))
             }
         );
@@ -421,7 +421,7 @@ mod tests {
         assert_eq!(
             expression,
             Expression::Prefix {
-                operator: "!".to_string(),
+                operator: PrefixOperator::BANG,
                 right: Box::new(Expression::Boolean(true))
             }
         );
@@ -434,7 +434,7 @@ mod tests {
         assert_eq!(
             expression,
             Expression::Prefix {
-                operator: "!".to_string(),
+                operator: PrefixOperator::BANG,
                 right: Box::new(Expression::Boolean(false))
             }
         );

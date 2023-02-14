@@ -1,4 +1,4 @@
-use crate::ast::{Expression, Program, Statement};
+use crate::ast::{Expression, PrefixOperator, Program, Statement};
 use crate::object::Object;
 
 // TODO: implement proper error handling
@@ -37,11 +37,10 @@ fn eval_expression(expression: &Expression) -> Object {
 }
 
 /// Evaluates a prefix expression
-fn eval_prefix_expression(operator: &String, right: Object) -> Object {
-    match operator.as_str() {
-        "!" => eval_bang_prefix_operator(right),
-        "-" => eval_minus_prefix_operator(right),
-        _ => Object::Null,
+fn eval_prefix_expression(operator: &PrefixOperator, right: Object) -> Object {
+    match operator {
+        PrefixOperator::BANG => eval_bang_prefix_operator(right),
+        PrefixOperator::NEGATE => eval_minus_prefix_operator(right),
     }
 }
 
@@ -156,5 +155,13 @@ mod tests {
         let evaluation = parse_and_eval_program(input);
         assert_eq!(evaluation.len(), 1);
         assert_eq!(evaluation[0], Object::Boolean(true));
+    }
+
+    #[test]
+    fn eval_infix_expression() {
+        let input = "5 + 5 + 5 + 5 - 10";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(10));
     }
 }

@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::token::Token;
 use std::fmt::{format, Debug, Display, Formatter};
 
@@ -46,6 +47,18 @@ impl Display for Block {
     }
 }
 
+/// Infix operators
+pub enum InfixOperator {
+    PLUS,
+    MINUS,
+    MULTIPLY,
+    DIVIDE,
+    GREATERTHAN,
+    LESSTHAN,
+    EQUAL,
+    NOTEQUAL,
+}
+
 /// Enum representing the different type of expressions we handle
 #[derive(Debug, PartialEq)]
 pub(crate) enum Expression {
@@ -57,7 +70,7 @@ pub(crate) enum Expression {
     /// <prefix><expression>
     /// e.g. -10 where - is the operator and 10 is the right expression
     Prefix {
-        operator: String,
+        operator: PrefixOperator,
         right: Box<Expression>,
     },
     /// Hods an infix expression of the form
@@ -125,6 +138,34 @@ impl Display for Expression {
                     .join(", ");
                 return f.write_str(&format!("{function}({comma_seperated_arguments})"));
             }
+        }
+    }
+}
+
+/// Prefix operators
+#[derive(Debug, PartialEq)]
+pub enum PrefixOperator {
+    BANG,
+    NEGATE,
+}
+
+impl Display for PrefixOperator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PrefixOperator::BANG => f.write_str("!"),
+            PrefixOperator::NEGATE => f.write_str("-"),
+        }
+    }
+}
+
+impl TryFrom<String> for PrefixOperator {
+    type Error = Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            "!" => Ok(PrefixOperator::BANG),
+            "-" => Ok(PrefixOperator::NEGATE),
+            _ => Err(Error::InvalidPrefixOperator(value.clone())),
         }
     }
 }
