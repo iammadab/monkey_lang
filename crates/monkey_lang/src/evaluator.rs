@@ -1,4 +1,4 @@
-use crate::ast::{Expression, PrefixOperator, Program, Statement};
+use crate::ast::{Expression, InfixOperator, PrefixOperator, Program, Statement};
 use crate::object::Object;
 
 // TODO: implement proper error handling
@@ -32,6 +32,15 @@ fn eval_expression(expression: &Expression) -> Object {
             let right_eval = eval_expression(right);
             eval_prefix_expression(operator, right_eval)
         }
+        Expression::Infix {
+            left,
+            operator,
+            right,
+        } => {
+            let left_eval = eval_expression(left);
+            let right_eval = eval_expression(right);
+            eval_infix_expression(operator, left_eval, right_eval)
+        }
         _ => todo!(),
     }
 }
@@ -41,6 +50,20 @@ fn eval_prefix_expression(operator: &PrefixOperator, right: Object) -> Object {
     match operator {
         PrefixOperator::BANG => eval_bang_prefix_operator(right),
         PrefixOperator::NEGATE => eval_minus_prefix_operator(right),
+    }
+}
+
+/// Evaluates an infix expression
+fn eval_infix_expression(operator: &InfixOperator, left: Object, right: Object) -> Object {
+    match (left, right) {
+        (Object::Integer(a), Object::Integer(b)) => match operator {
+            InfixOperator::PLUS => Object::Integer(a + b),
+            InfixOperator::MINUS => Object::Integer(a - b),
+            InfixOperator::MULTIPLY => Object::Integer(a * b),
+            InfixOperator::DIVIDE => Object::Integer(a / b),
+            _ => Object::Null,
+        },
+        (_, _) => Object::Null,
     }
 }
 
