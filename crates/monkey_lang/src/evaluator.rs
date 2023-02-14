@@ -24,6 +24,7 @@ pub fn eval_program_string_output(program: &Program) -> Vec<String> {
 fn eval_expression(expression: &Expression) -> Object {
     match expression {
         Expression::IntegerLiteral(value) => Object::Integer(value.to_owned()),
+        Expression::Boolean(bool) => Object::Boolean(bool.to_owned()),
         _ => Object::Null,
     }
 }
@@ -56,5 +57,18 @@ mod tests {
 
         assert_eq!(evaluation.len(), 1);
         assert_eq!(evaluation[0], Object::Integer(10));
+    }
+
+    #[test]
+    fn eval_boolean_expression() {
+        let input = "true";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
+
+        let input = "false";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
     }
 }
