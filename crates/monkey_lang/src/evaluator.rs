@@ -56,14 +56,21 @@ fn eval_prefix_expression(operator: &PrefixOperator, right: Object) -> Object {
 /// Evaluates an infix expression
 fn eval_infix_expression(operator: &InfixOperator, left: Object, right: Object) -> Object {
     match (left, right) {
-        (Object::Integer(a), Object::Integer(b)) => match operator {
-            InfixOperator::PLUS => Object::Integer(a + b),
-            InfixOperator::MINUS => Object::Integer(a - b),
-            InfixOperator::MULTIPLY => Object::Integer(a * b),
-            InfixOperator::DIVIDE => Object::Integer(a / b),
-            _ => Object::Null,
-        },
+        (Object::Integer(a), Object::Integer(b)) => eval_integer_infix_expression(operator, a, b),
         (_, _) => Object::Null,
+    }
+}
+
+fn eval_integer_infix_expression(operator: &InfixOperator, left: i64, right: i64) -> Object {
+    match operator {
+        InfixOperator::PLUS => Object::Integer(left + right),
+        InfixOperator::MINUS => Object::Integer(left - right),
+        InfixOperator::MULTIPLY => Object::Integer(left * right),
+        InfixOperator::DIVIDE => Object::Integer(left / right),
+        InfixOperator::LESSTHAN => Object::Boolean(left < right),
+        InfixOperator::GREATERTHAN => Object::Boolean(left > right),
+        InfixOperator::EQUAL => Object::Boolean(left == right),
+        InfixOperator::NOTEQUAL => Object::Boolean(left != right),
     }
 }
 
@@ -181,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn eval_arithmetic_infix_expression() {
+    fn eval_integer_infix_expression() {
         let input = "5 + 5 + 5 + 5 - 10";
         let evaluation = parse_and_eval_program(input);
         assert_eq!(evaluation.len(), 1);
@@ -201,5 +208,45 @@ mod tests {
         let evaluation = parse_and_eval_program(input);
         assert_eq!(evaluation.len(), 1);
         assert_eq!(evaluation[0], Object::Integer(50));
+
+        let input = "1 < 2";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
+
+        let input = "1 > 2";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
+
+        let input = "1 < 1";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
+
+        let input = "1 > 1";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
+
+        let input = "1 == 1";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
+
+        let input = "1 != 1";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
+
+        let input = "1 == 2";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
+
+        let input = "1 != 2";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
     }
 }
