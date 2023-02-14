@@ -1,6 +1,7 @@
 pub(crate) mod ast;
 pub(crate) mod error;
+mod evaluator;
 pub mod lexer;
-mod object;
+pub(crate) mod object;
 pub mod parser;
 pub mod token;
