@@ -1,6 +1,5 @@
 use crate::token::Token;
 use std::fmt::{format, Debug, Display, Formatter};
-use thiserror::__private::DisplayAsDisplay;
 
 /// Enum representing the different type of statements we handle
 #[derive(Debug, PartialEq)]
