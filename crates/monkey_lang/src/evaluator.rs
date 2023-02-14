@@ -1,6 +1,8 @@
 use crate::ast::{Expression, Program, Statement};
 use crate::object::Object;
 
+// TODO: implement proper error handling
+
 /// Evaluates a vector of statements, returning a corresponding vector of objects
 /// for each statement
 fn eval_program(program: &Program) -> Vec<Object> {
@@ -25,7 +27,39 @@ fn eval_expression(expression: &Expression) -> Object {
     match expression {
         Expression::IntegerLiteral(value) => Object::Integer(value.to_owned()),
         Expression::Boolean(bool) => Object::Boolean(bool.to_owned()),
+        Expression::Prefix { operator, right } => {
+            let right_eval = eval_expression(right);
+            eval_prefix_expression(operator, right_eval)
+        }
         _ => Object::Null,
+    }
+}
+
+/// Evaluates a prefix expression
+fn eval_prefix_expression(operator: &String, right: Object) -> Object {
+    match operator.as_str() {
+        "!" => eval_bang_operator(right),
+        _ => Object::Null,
+    }
+}
+
+/// Evaluates the bang operator on an object
+fn eval_bang_operator(obj: Object) -> Object {
+    match obj {
+        Object::Boolean(val) => Object::Boolean(!val),
+        Object::Integer(val) => {
+            if val == 0 {
+                // 0 means false, hence this is converted to Object::Boolean(false)
+                // applying the bang operator we get Object::Boolean(true)
+                Object::Boolean(true)
+            } else {
+                Object::Boolean(false)
+            }
+        }
+        Object::Null => {
+            // null by default represents false, so we return true
+            Object::Boolean(true)
+        }
     }
 }
 
@@ -70,5 +104,39 @@ mod tests {
         let evaluation = parse_and_eval_program(input);
         assert_eq!(evaluation.len(), 1);
         assert_eq!(evaluation[0], Object::Boolean(false));
+    }
+
+    #[test]
+    fn eval_bang_operator() {
+        let input = "!true";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
+
+        let input = "!false";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
+
+        // ???
+        let input = "!5";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
+
+        let input = "!!true";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
+
+        let input = "!!false";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
+
+        let input = "!!5";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
     }
 }
