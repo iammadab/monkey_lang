@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::token::Token;
+use crate::token::{Token, TokenType};
 use std::fmt::{format, Debug, Display, Formatter};
 
 /// Enum representing the different type of statements we handle
@@ -47,18 +47,6 @@ impl Display for Block {
     }
 }
 
-/// Infix operators
-pub enum InfixOperator {
-    PLUS,
-    MINUS,
-    MULTIPLY,
-    DIVIDE,
-    GREATERTHAN,
-    LESSTHAN,
-    EQUAL,
-    NOTEQUAL,
-}
-
 /// Enum representing the different type of expressions we handle
 #[derive(Debug, PartialEq)]
 pub(crate) enum Expression {
@@ -77,7 +65,7 @@ pub(crate) enum Expression {
     /// <expression><operator><expression>
     Infix {
         left: Box<Expression>,
-        operator: String,
+        operator: InfixOperator,
         right: Box<Expression>,
     },
     /// Represents a boolean value i.e true or false
@@ -158,6 +146,7 @@ impl Display for PrefixOperator {
     }
 }
 
+// TODO: tie it to the token type not the literal
 impl TryFrom<String> for PrefixOperator {
     type Error = Error;
 
@@ -166,6 +155,52 @@ impl TryFrom<String> for PrefixOperator {
             "!" => Ok(PrefixOperator::BANG),
             "-" => Ok(PrefixOperator::NEGATE),
             _ => Err(Error::InvalidPrefixOperator(value.clone())),
+        }
+    }
+}
+
+/// Infix operators
+#[derive(Debug, PartialEq)]
+pub enum InfixOperator {
+    PLUS,
+    MINUS,
+    MULTIPLY,
+    DIVIDE,
+    GREATERTHAN,
+    LESSTHAN,
+    EQUAL,
+    NOTEQUAL,
+}
+
+impl Display for InfixOperator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InfixOperator::PLUS => f.write_str("+"),
+            InfixOperator::MINUS => f.write_str("-"),
+            InfixOperator::MULTIPLY => f.write_str("*"),
+            InfixOperator::DIVIDE => f.write_str("/"),
+            InfixOperator::GREATERTHAN => f.write_str(">"),
+            InfixOperator::LESSTHAN => f.write_str("<"),
+            InfixOperator::EQUAL => f.write_str("=="),
+            InfixOperator::NOTEQUAL => f.write_str("!="),
+        }
+    }
+}
+
+impl TryFrom<String> for InfixOperator {
+    type Error = Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            "+" => Ok(InfixOperator::PLUS),
+            "-" => Ok(InfixOperator::MINUS),
+            "*" => Ok(InfixOperator::MULTIPLY),
+            "/" => Ok(InfixOperator::DIVIDE),
+            ">" => Ok(InfixOperator::GREATERTHAN),
+            "<" => Ok(InfixOperator::LESSTHAN),
+            "==" => Ok(InfixOperator::EQUAL),
+            "!=" => Ok(InfixOperator::NOTEQUAL),
+            _ => Err(Error::InvalidInfixOperator(value.clone())),
         }
     }
 }

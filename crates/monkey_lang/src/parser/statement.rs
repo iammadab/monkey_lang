@@ -80,7 +80,7 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Block, Expression, PrefixOperator, Statement};
+    use crate::ast::{Block, Expression, InfixOperator, PrefixOperator, Statement};
     use crate::lexer::Lexer;
     use crate::parser::Parser;
 
@@ -165,7 +165,7 @@ mod tests {
             program.statements[0],
             Statement::Expression(Expression::Infix {
                 left: Box::new(Expression::IntegerLiteral(3)),
-                operator: "+".to_string(),
+                operator: InfixOperator::PLUS,
                 right: Box::new(Expression::IntegerLiteral(4))
             })
         );
@@ -176,7 +176,7 @@ mod tests {
                     operator: PrefixOperator::NEGATE,
                     right: Box::new(Expression::IntegerLiteral(5))
                 }),
-                operator: "*".to_string(),
+                operator: InfixOperator::MULTIPLY,
                 right: Box::new(Expression::IntegerLiteral(5))
             })
         );
@@ -196,7 +196,7 @@ mod tests {
                     Statement::Expression(Expression::Identifier("x".to_string())),
                     Statement::Expression(Expression::Infix {
                         left: Box::new(Expression::IntegerLiteral(2)),
-                        operator: "+".to_string(),
+                        operator: InfixOperator::PLUS,
                         right: Box::new(Expression::IntegerLiteral(3))
                     }),
                     Statement::Let {
