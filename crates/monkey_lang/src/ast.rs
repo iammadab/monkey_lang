@@ -162,6 +162,7 @@ impl TryFrom<String> for PrefixOperator {
 /// Infix operators
 #[derive(Debug, PartialEq)]
 pub enum InfixOperator {
+    // TODO: add support for <= and >=
     PLUS,
     MINUS,
     MULTIPLY,

@@ -57,10 +57,12 @@ fn eval_prefix_expression(operator: &PrefixOperator, right: Object) -> Object {
 fn eval_infix_expression(operator: &InfixOperator, left: Object, right: Object) -> Object {
     match (left, right) {
         (Object::Integer(a), Object::Integer(b)) => eval_integer_infix_expression(operator, a, b),
+        (Object::Boolean(a), Object::Boolean(b)) => eval_boolean_infix_expression(operator, a, b),
         (_, _) => Object::Null,
     }
 }
 
+/// Performs infix operations on integer types
 fn eval_integer_infix_expression(operator: &InfixOperator, left: i64, right: i64) -> Object {
     match operator {
         InfixOperator::PLUS => Object::Integer(left + right),
@@ -71,6 +73,16 @@ fn eval_integer_infix_expression(operator: &InfixOperator, left: i64, right: i64
         InfixOperator::GREATERTHAN => Object::Boolean(left > right),
         InfixOperator::EQUAL => Object::Boolean(left == right),
         InfixOperator::NOTEQUAL => Object::Boolean(left != right),
+    }
+}
+
+/// Performs infix operations on boolean types
+fn eval_boolean_infix_expression(operator: &InfixOperator, left: bool, right: bool) -> Object {
+    // TODO: add support for greater and less than
+    match operator {
+        InfixOperator::EQUAL => Object::Boolean(left == right),
+        InfixOperator::NOTEQUAL => Object::Boolean(left != right),
+        _ => Object::Null,
     }
 }
 
@@ -248,5 +260,53 @@ mod tests {
         let evaluation = parse_and_eval_program(input);
         assert_eq!(evaluation.len(), 1);
         assert_eq!(evaluation[0], Object::Boolean(true));
+    }
+
+    #[test]
+    fn eval_boolean_infix_expression() {
+        let input = "true == true";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
+
+        let input = "false == false";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
+
+        let input = "true == false";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
+
+        let input = "true != false";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
+
+        let input = "false != true";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
+
+        let input = "(1 < 2) == false";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
+
+        let input = "(1 < 2) == true";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
+
+        let input = "(1 > 2) == false";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(true));
+
+        let input = "(1 > 2) == true";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Boolean(false));
     }
 }
