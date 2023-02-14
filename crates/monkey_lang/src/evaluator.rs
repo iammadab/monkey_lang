@@ -181,10 +181,25 @@ mod tests {
     }
 
     #[test]
-    fn eval_infix_expression() {
+    fn eval_arithmetic_infix_expression() {
         let input = "5 + 5 + 5 + 5 - 10";
         let evaluation = parse_and_eval_program(input);
         assert_eq!(evaluation.len(), 1);
         assert_eq!(evaluation[0], Object::Integer(10));
+
+        let input = "2 * 2 * 2 * 2 * 2";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(32));
+
+        let input = "2 * (5 + 10)";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(30));
+
+        let input = "(5 + 10 * 2 + 15 / 3) * 2 + -10";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(50));
     }
 }
