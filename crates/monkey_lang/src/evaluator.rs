@@ -44,5 +44,11 @@ mod tests {
 
         assert_eq!(evaluation.len(), 1);
         assert_eq!(evaluation[0], Object::Integer(5));
+
+        let input = "10";
+        let evaluation = parse_and_eval_program(input);
+
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(10));
     }
 }
