@@ -14,6 +14,12 @@ fn eval_program(program: &Program) -> Vec<Object> {
         .collect()
 }
 
+/// Same as eval_program but converts object to string after
+pub fn eval_program_string_output(program: &Program) -> Vec<String> {
+    let evaluation = eval_program(program);
+    evaluation.iter().map(|obj| obj.to_string()).collect()
+}
+
 /// Evaluates an expression
 fn eval_expression(expression: &Expression) -> Object {
     match expression {
