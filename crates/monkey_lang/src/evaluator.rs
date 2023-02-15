@@ -1,4 +1,4 @@
-use crate::ast::{Expression, InfixOperator, PrefixOperator, Program, Statement};
+use crate::ast::{Block, Expression, InfixOperator, PrefixOperator, Program, Statement};
 use crate::object::Object;
 
 // TODO: implement proper error handling
@@ -7,20 +7,24 @@ use crate::object::Object;
 /// Evaluates a vector of statements, returning a corresponding vector of objects
 /// for each statement
 fn eval_program(program: &Program) -> Vec<Object> {
-    program
-        .statements
-        .iter()
-        .map(|statement| match statement {
-            Statement::Expression(expr) => eval_expression(&expr),
-            _ => Object::Null,
-        })
-        .collect()
+    eval_statements(&program.statements)
 }
 
 /// Same as eval_program but converts object to string after
 pub fn eval_program_string_output(program: &Program) -> Vec<String> {
     let evaluation = eval_program(program);
     evaluation.iter().map(|obj| obj.to_string()).collect()
+}
+
+/// Evaluate satements
+fn eval_statements(statements: &Vec<Statement>) -> Vec<Object> {
+    statements
+        .iter()
+        .map(|statement| match statement {
+            Statement::Expression(expr) => eval_expression(&expr),
+            _ => Object::Null,
+        })
+        .collect()
 }
 
 /// Evaluates an expression
@@ -41,6 +45,11 @@ fn eval_expression(expression: &Expression) -> Object {
             let right_eval = eval_expression(right);
             eval_infix_expression(operator, left_eval, right_eval)
         }
+        Expression::If {
+            condition,
+            consequence,
+            alternative,
+        } => eval_if_expression(condition, consequence, alternative),
         _ => todo!(),
     }
 }
@@ -50,6 +59,34 @@ fn eval_prefix_expression(operator: &PrefixOperator, right: Object) -> Object {
     match operator {
         PrefixOperator::BANG => eval_bang_prefix_operator(right),
         PrefixOperator::NEGATE => eval_minus_prefix_operator(right),
+    }
+}
+
+/// Evaluates the bang operator on an object
+fn eval_bang_prefix_operator(obj: Object) -> Object {
+    match obj {
+        Object::Boolean(val) => Object::Boolean(!val),
+        Object::Integer(val) => {
+            if val == 0 {
+                // 0 means false, hence this is converted to Object::Boolean(false)
+                // applying the bang operator we get Object::Boolean(true)
+                Object::Boolean(true)
+            } else {
+                Object::Boolean(false)
+            }
+        }
+        Object::Null => {
+            // null by default represents false, so we return true
+            Object::Boolean(true)
+        }
+    }
+}
+
+/// Evaluates the negation operator on an object
+fn eval_minus_prefix_operator(obj: Object) -> Object {
+    match obj {
+        Object::Integer(val) => Object::Integer(-1 * val),
+        _ => Object::Null,
     }
 }
 
@@ -86,32 +123,27 @@ fn eval_boolean_infix_expression(operator: &InfixOperator, left: bool, right: bo
     }
 }
 
-/// Evaluates the bang operator on an object
-fn eval_bang_prefix_operator(obj: Object) -> Object {
-    match obj {
-        Object::Boolean(val) => Object::Boolean(!val),
-        Object::Integer(val) => {
-            if val == 0 {
-                // 0 means false, hence this is converted to Object::Boolean(false)
-                // applying the bang operator we get Object::Boolean(true)
-                Object::Boolean(true)
-            } else {
-                Object::Boolean(false)
-            }
-        }
-        Object::Null => {
-            // null by default represents false, so we return true
-            Object::Boolean(true)
-        }
+/// Evaluates an if expression
+fn eval_if_expression(
+    condition: &Box<Expression>,
+    consequence: &Block,
+    alternative: &Option<Block>,
+) -> Object {
+    let condition_eval = eval_expression(condition);
+    if condition_eval.is_truthy() {
+        eval_block(consequence)
+    } else if let Some(alternative) = alternative {
+        eval_block(alternative)
+    } else {
+        Object::Null
     }
 }
 
-/// Evaluates the negation operator on an object
-fn eval_minus_prefix_operator(obj: Object) -> Object {
-    match obj {
-        Object::Integer(val) => Object::Integer(-1 * val),
-        _ => Object::Null,
-    }
+/// Evaluates a block and returns the evaluation of the last statement
+/// in the block
+fn eval_block(block: &Block) -> Object {
+    let evaluation = eval_statements(&block.statements);
+    evaluation.last().cloned().unwrap_or(Object::Null)
 }
 
 #[cfg(test)]
@@ -308,5 +340,43 @@ mod tests {
         let evaluation = parse_and_eval_program(input);
         assert_eq!(evaluation.len(), 1);
         assert_eq!(evaluation[0], Object::Boolean(false));
+    }
+
+    #[test]
+    fn eval_if_expression() {
+        let input = "if (true) { 10 }";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(10));
+
+        let input = "if (false) { 10 }";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Null);
+
+        let input = "if (1) { 10 }";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(10));
+
+        let input = "if (1 < 2) { 10 }";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(10));
+
+        let input = "if (1 > 2) { 10 }";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Null);
+
+        let input = "if (1 < 2) { 10 } else { 20 }";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(10));
+
+        let input = "if (1 > 2) { 10 } else { 20 }";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(20));
     }
 }
