@@ -26,7 +26,7 @@ fn main() -> io::Result<()> {
         // TODO: should we be evaluating statements instead??
         let evaluation = eval_program_string_output(&program);
 
-        println!("{}", evaluation[0]);
+        println!("{}", evaluation);
 
         input.clear();
     }

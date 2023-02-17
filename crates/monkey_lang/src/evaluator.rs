@@ -6,31 +6,30 @@ use crate::object::Object;
 
 /// Evaluates a vector of statements, returning a corresponding vector of objects
 /// for each statement
-fn eval_program(program: &Program) -> Vec<Object> {
+fn eval_program(program: &Program) -> Object {
     eval_statements(&program.statements)
 }
 
 /// Same as eval_program but converts object to string after
-pub fn eval_program_string_output(program: &Program) -> Vec<String> {
+pub fn eval_program_string_output(program: &Program) -> String {
     let evaluation = eval_program(program);
-    evaluation.iter().map(|obj| obj.to_string()).collect()
+    evaluation.to_string()
 }
 
 /// Evaluate satements
-// TODO: should statement evaluation return a single object??
-fn eval_statements(statements: &Vec<Statement>) -> Vec<Object> {
-    let mut evaluations = Vec::new();
+fn eval_statements(statements: &Vec<Statement>) -> Object {
+    let mut evaluation: Object = Object::Null;
     for statement in statements {
         match statement {
-            Statement::Expression(expr) => evaluations.push(eval_expression(expr)),
+            Statement::Expression(expr) => evaluation = eval_expression(expr),
             Statement::Return { return_value } => {
-                evaluations.push(eval_expression(return_value));
+                evaluation = eval_expression(return_value);
                 break;
             }
-            _ => evaluations.push(Object::Null),
+            _ => evaluation = Object::Null,
         }
     }
-    evaluations
+    evaluation
 }
 
 /// Evaluates an expression
@@ -148,8 +147,7 @@ fn eval_if_expression(
 /// Evaluates a block and returns the evaluation of the last statement
 /// in the block
 fn eval_block(block: &Block) -> Object {
-    let evaluation = eval_statements(&block.statements);
-    evaluation.last().cloned().unwrap_or(Object::Null)
+    eval_statements(&block.statements)
 }
 
 #[cfg(test)]
@@ -160,7 +158,7 @@ mod tests {
     use crate::object::Object;
     use crate::parser::Parser;
 
-    fn parse_and_eval_program(input: &str) -> Vec<Object> {
+    fn parse_and_eval_program(input: &str) -> Object {
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
@@ -171,241 +169,197 @@ mod tests {
     fn eval_integer_expression() {
         let input = "5";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(5));
+        assert_eq!(evaluation, Object::Integer(5));
 
         let input = "10";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(10));
+        assert_eq!(evaluation, Object::Integer(10));
 
         let input = "-5";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(-5));
+        assert_eq!(evaluation, Object::Integer(-5));
 
         let input = "-10";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(-10));
+        assert_eq!(evaluation, Object::Integer(-10));
     }
 
     #[test]
     fn eval_boolean_expression() {
         let input = "true";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
 
         let input = "false";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
     }
 
     #[test]
     fn eval_bang_operator() {
         let input = "!true";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
 
         let input = "!false";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
 
         // ???
         let input = "!5";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
 
         let input = "!!true";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
 
         let input = "!!false";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
 
         let input = "!!5";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
     }
 
     #[test]
     fn eval_integer_infix_expression() {
         let input = "5 + 5 + 5 + 5 - 10";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(10));
+        assert_eq!(evaluation, Object::Integer(10));
 
         let input = "2 * 2 * 2 * 2 * 2";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(32));
+        assert_eq!(evaluation, Object::Integer(32));
 
         let input = "2 * (5 + 10)";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(30));
+        assert_eq!(evaluation, Object::Integer(30));
 
         let input = "(5 + 10 * 2 + 15 / 3) * 2 + -10";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(50));
+        assert_eq!(evaluation, Object::Integer(50));
 
         let input = "1 < 2";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
 
         let input = "1 > 2";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
 
         let input = "1 < 1";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
 
         let input = "1 > 1";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
 
         let input = "1 == 1";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
 
         let input = "1 != 1";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
 
         let input = "1 == 2";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
 
         let input = "1 != 2";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
     }
 
     #[test]
     fn eval_boolean_infix_expression() {
         let input = "true == true";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
 
         let input = "false == false";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
 
         let input = "true == false";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
 
         let input = "true != false";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
 
         let input = "false != true";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
 
         let input = "(1 < 2) == false";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
 
         let input = "(1 < 2) == true";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
 
         let input = "(1 > 2) == false";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(true));
+        assert_eq!(evaluation, Object::Boolean(true));
 
         let input = "(1 > 2) == true";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Boolean(false));
+        assert_eq!(evaluation, Object::Boolean(false));
     }
 
     #[test]
     fn eval_if_expression() {
         let input = "if (true) { 10 }";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(10));
+        assert_eq!(evaluation, Object::Integer(10));
 
         let input = "if (false) { 10 }";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Null);
+        assert_eq!(evaluation, Object::Null);
 
         let input = "if (1) { 10 }";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(10));
+        assert_eq!(evaluation, Object::Integer(10));
 
         let input = "if (1 < 2) { 10 }";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(10));
+        assert_eq!(evaluation, Object::Integer(10));
 
         let input = "if (1 > 2) { 10 }";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Null);
+        assert_eq!(evaluation, Object::Null);
 
         let input = "if (1 < 2) { 10 } else { 20 }";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(10));
+        assert_eq!(evaluation, Object::Integer(10));
 
         let input = "if (1 > 2) { 10 } else { 20 }";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(20));
+        assert_eq!(evaluation, Object::Integer(20));
     }
 
     #[test]
     fn eval_return_expression() {
         let input = "return 10;";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(10));
+        assert_eq!(evaluation, Object::Integer(10));
 
         let input = "return 10; 9;";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(10));
+        assert_eq!(evaluation, Object::Integer(10));
 
         let input = "return 2 * 5; 9;";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 1);
-        assert_eq!(evaluation[0], Object::Integer(10));
+        assert_eq!(evaluation, Object::Integer(10));
 
         let input = "9; return 2 * 5; 9;";
         let evaluation = parse_and_eval_program(input);
-        assert_eq!(evaluation.len(), 2);
-        assert_eq!(evaluation[1], Object::Integer(10));
+        assert_eq!(evaluation, Object::Integer(10));
     }
 }
