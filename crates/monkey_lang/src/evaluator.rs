@@ -17,14 +17,20 @@ pub fn eval_program_string_output(program: &Program) -> Vec<String> {
 }
 
 /// Evaluate satements
+// TODO: should statement evaluation return a single object??
 fn eval_statements(statements: &Vec<Statement>) -> Vec<Object> {
-    statements
-        .iter()
-        .map(|statement| match statement {
-            Statement::Expression(expr) => eval_expression(&expr),
-            _ => Object::Null,
-        })
-        .collect()
+    let mut evaluations = Vec::new();
+    for statement in statements {
+        match statement {
+            Statement::Expression(expr) => evaluations.push(eval_expression(expr)),
+            Statement::Return { return_value } => {
+                evaluations.push(eval_expression(return_value));
+                break;
+            }
+            _ => evaluations.push(Object::Null),
+        }
+    }
+    evaluations
 }
 
 /// Evaluates an expression
@@ -378,5 +384,28 @@ mod tests {
         let evaluation = parse_and_eval_program(input);
         assert_eq!(evaluation.len(), 1);
         assert_eq!(evaluation[0], Object::Integer(20));
+    }
+
+    #[test]
+    fn eval_return_expression() {
+        let input = "return 10;";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(10));
+
+        let input = "return 10; 9;";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(10));
+
+        let input = "return 2 * 5; 9;";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0], Object::Integer(10));
+
+        let input = "9; return 2 * 5; 9;";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation.len(), 2);
+        assert_eq!(evaluation[1], Object::Integer(10));
     }
 }
