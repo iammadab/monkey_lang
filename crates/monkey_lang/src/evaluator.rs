@@ -6,6 +6,7 @@ use crate::object::{EvaluationValue, Object};
 
 /// Evaluates a vector of statements, returning a corresponding vector of objects
 /// for each statement
+// TODO: this should also return a result
 fn eval_program(program: &Program) -> Object {
     eval_statements(&program.statements).object
 }
@@ -45,7 +46,7 @@ fn eval_expression(expression: &Expression) -> EvaluationValue {
         Expression::Boolean(bool) => Object::Boolean(bool.to_owned()).into(),
         Expression::Prefix { operator, right } => {
             let right_eval = eval_expression(right);
-            eval_prefix_expression(operator, right_eval.object).into()
+            eval_prefix_expression(operator, right_eval.object)
         }
         Expression::Infix {
             left,
@@ -54,19 +55,19 @@ fn eval_expression(expression: &Expression) -> EvaluationValue {
         } => {
             let left_eval = eval_expression(left);
             let right_eval = eval_expression(right);
-            eval_infix_expression(operator, left_eval.object, right_eval.object).into()
+            eval_infix_expression(operator, left_eval.object, right_eval.object)
         }
         Expression::If {
             condition,
             consequence,
             alternative,
-        } => eval_if_expression(condition, consequence, alternative).into(),
+        } => eval_if_expression(condition, consequence, alternative),
         _ => todo!(),
     }
 }
 
 /// Evaluates a prefix expression
-fn eval_prefix_expression(operator: &PrefixOperator, right: Object) -> Object {
+fn eval_prefix_expression(operator: &PrefixOperator, right: Object) -> EvaluationValue {
     match operator {
         PrefixOperator::BANG => eval_bang_prefix_operator(right),
         PrefixOperator::NEGATE => eval_minus_prefix_operator(right),
@@ -74,63 +75,71 @@ fn eval_prefix_expression(operator: &PrefixOperator, right: Object) -> Object {
 }
 
 /// Evaluates the bang operator on an object
-fn eval_bang_prefix_operator(obj: Object) -> Object {
+fn eval_bang_prefix_operator(obj: Object) -> EvaluationValue {
     match obj {
-        Object::Boolean(val) => Object::Boolean(!val),
+        Object::Boolean(val) => Object::Boolean(!val).into(),
         Object::Integer(val) => {
             if val == 0 {
                 // 0 means false, hence this is converted to Object::Boolean(false)
                 // applying the bang operator we get Object::Boolean(true)
-                Object::Boolean(true)
+                Object::Boolean(true).into()
             } else {
-                Object::Boolean(false)
+                Object::Boolean(false).into()
             }
         }
         Object::Null => {
             // null by default represents false, so we return true
-            Object::Boolean(true)
+            Object::Boolean(true).into()
         }
     }
 }
 
 /// Evaluates the negation operator on an object
-fn eval_minus_prefix_operator(obj: Object) -> Object {
+fn eval_minus_prefix_operator(obj: Object) -> EvaluationValue {
     match obj {
-        Object::Integer(val) => Object::Integer(-1 * val),
-        _ => Object::Null,
+        Object::Integer(val) => Object::Integer(-1 * val).into(),
+        _ => Object::Null.into(),
     }
 }
 
 /// Evaluates an infix expression
-fn eval_infix_expression(operator: &InfixOperator, left: Object, right: Object) -> Object {
+fn eval_infix_expression(operator: &InfixOperator, left: Object, right: Object) -> EvaluationValue {
     match (left, right) {
         (Object::Integer(a), Object::Integer(b)) => eval_integer_infix_expression(operator, a, b),
         (Object::Boolean(a), Object::Boolean(b)) => eval_boolean_infix_expression(operator, a, b),
-        (_, _) => Object::Null,
+        (_, _) => Object::Null.into(),
     }
 }
 
 /// Performs infix operations on integer types
-fn eval_integer_infix_expression(operator: &InfixOperator, left: i64, right: i64) -> Object {
+fn eval_integer_infix_expression(
+    operator: &InfixOperator,
+    left: i64,
+    right: i64,
+) -> EvaluationValue {
     match operator {
-        InfixOperator::PLUS => Object::Integer(left + right),
-        InfixOperator::MINUS => Object::Integer(left - right),
-        InfixOperator::MULTIPLY => Object::Integer(left * right),
-        InfixOperator::DIVIDE => Object::Integer(left / right),
-        InfixOperator::LESSTHAN => Object::Boolean(left < right),
-        InfixOperator::GREATERTHAN => Object::Boolean(left > right),
-        InfixOperator::EQUAL => Object::Boolean(left == right),
-        InfixOperator::NOTEQUAL => Object::Boolean(left != right),
+        InfixOperator::PLUS => Object::Integer(left + right).into(),
+        InfixOperator::MINUS => Object::Integer(left - right).into(),
+        InfixOperator::MULTIPLY => Object::Integer(left * right).into(),
+        InfixOperator::DIVIDE => Object::Integer(left / right).into(),
+        InfixOperator::LESSTHAN => Object::Boolean(left < right).into(),
+        InfixOperator::GREATERTHAN => Object::Boolean(left > right).into(),
+        InfixOperator::EQUAL => Object::Boolean(left == right).into(),
+        InfixOperator::NOTEQUAL => Object::Boolean(left != right).into(),
     }
 }
 
 /// Performs infix operations on boolean types
-fn eval_boolean_infix_expression(operator: &InfixOperator, left: bool, right: bool) -> Object {
+fn eval_boolean_infix_expression(
+    operator: &InfixOperator,
+    left: bool,
+    right: bool,
+) -> EvaluationValue {
     // TODO: add support for greater and less than
     match operator {
-        InfixOperator::EQUAL => Object::Boolean(left == right),
-        InfixOperator::NOTEQUAL => Object::Boolean(left != right),
-        _ => Object::Null,
+        InfixOperator::EQUAL => Object::Boolean(left == right).into(),
+        InfixOperator::NOTEQUAL => Object::Boolean(left != right).into(),
+        _ => Object::Null.into(),
     }
 }
 
@@ -377,5 +386,13 @@ mod tests {
          }";
         let evaluation = parse_and_eval_program(input);
         assert_eq!(evaluation, Object::Integer(10));
+    }
+
+    #[test]
+    fn error_handling() {
+        let input = "5 + true;";
+        let evaluation = parse_and_eval_program(input);
+        // TODO: convert to the actual types
+        assert_eq!(evaluation.to_string(), "type mismatch: 5 + true");
     }
 }
