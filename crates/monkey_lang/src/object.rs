@@ -1,5 +1,29 @@
 use std::fmt::{Display, Formatter};
 
+/// Struct to hold result of evaluations
+pub(crate) struct EvaluationValue {
+    pub(crate) object: Object,
+    pub(crate) is_return_value: bool,
+}
+
+impl Default for EvaluationValue {
+    fn default() -> Self {
+        Self {
+            object: Object::Null,
+            is_return_value: false,
+        }
+    }
+}
+
+impl From<Object> for EvaluationValue {
+    fn from(value: Object) -> Self {
+        Self {
+            object: value,
+            is_return_value: false,
+        }
+    }
+}
+
 /// Enum to describe the internal object system for our values
 #[derive(PartialEq, Debug, Clone)]
 pub(crate) enum Object {

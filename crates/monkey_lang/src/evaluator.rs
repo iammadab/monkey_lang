@@ -1,5 +1,5 @@
 use crate::ast::{Block, Expression, InfixOperator, PrefixOperator, Program, Statement};
-use crate::object::Object;
+use crate::object::{EvaluationValue, Object};
 
 // TODO: implement proper error handling
 //  by making certain things stricter
@@ -7,7 +7,7 @@ use crate::object::Object;
 /// Evaluates a vector of statements, returning a corresponding vector of objects
 /// for each statement
 fn eval_program(program: &Program) -> Object {
-    eval_statements(&program.statements)
+    eval_statements(&program.statements).object
 }
 
 /// Same as eval_program but converts object to string after
@@ -17,29 +17,35 @@ pub fn eval_program_string_output(program: &Program) -> String {
 }
 
 /// Evaluate satements
-fn eval_statements(statements: &Vec<Statement>) -> Object {
-    let mut evaluation: Object = Object::Null;
+fn eval_statements(statements: &Vec<Statement>) -> EvaluationValue {
+    let mut evaluation: EvaluationValue = Object::Null.into();
     for statement in statements {
         match statement {
-            Statement::Expression(expr) => evaluation = eval_expression(expr),
+            Statement::Expression(expr) => {
+                evaluation = eval_expression(expr);
+                if evaluation.is_return_value {
+                    break;
+                }
+            }
             Statement::Return { return_value } => {
                 evaluation = eval_expression(return_value);
+                evaluation.is_return_value = true;
                 break;
             }
-            _ => evaluation = Object::Null,
+            _ => evaluation = Object::Null.into(),
         }
     }
     evaluation
 }
 
 /// Evaluates an expression
-fn eval_expression(expression: &Expression) -> Object {
+fn eval_expression(expression: &Expression) -> EvaluationValue {
     match expression {
-        Expression::IntegerLiteral(value) => Object::Integer(value.to_owned()),
-        Expression::Boolean(bool) => Object::Boolean(bool.to_owned()),
+        Expression::IntegerLiteral(value) => Object::Integer(value.to_owned()).into(),
+        Expression::Boolean(bool) => Object::Boolean(bool.to_owned()).into(),
         Expression::Prefix { operator, right } => {
             let right_eval = eval_expression(right);
-            eval_prefix_expression(operator, right_eval)
+            eval_prefix_expression(operator, right_eval.object).into()
         }
         Expression::Infix {
             left,
@@ -48,13 +54,13 @@ fn eval_expression(expression: &Expression) -> Object {
         } => {
             let left_eval = eval_expression(left);
             let right_eval = eval_expression(right);
-            eval_infix_expression(operator, left_eval, right_eval)
+            eval_infix_expression(operator, left_eval.object, right_eval.object).into()
         }
         Expression::If {
             condition,
             consequence,
             alternative,
-        } => eval_if_expression(condition, consequence, alternative),
+        } => eval_if_expression(condition, consequence, alternative).into(),
         _ => todo!(),
     }
 }
@@ -133,20 +139,20 @@ fn eval_if_expression(
     condition: &Box<Expression>,
     consequence: &Block,
     alternative: &Option<Block>,
-) -> Object {
-    let condition_eval = eval_expression(condition);
+) -> EvaluationValue {
+    let condition_eval = eval_expression(condition).object;
     if condition_eval.is_truthy() {
         eval_block(consequence)
     } else if let Some(alternative) = alternative {
         eval_block(alternative)
     } else {
-        Object::Null
+        Object::Null.into()
     }
 }
 
 /// Evaluates a block and returns the evaluation of the last statement
 /// in the block
-fn eval_block(block: &Block) -> Object {
+fn eval_block(block: &Block) -> EvaluationValue {
     eval_statements(&block.statements)
 }
 
@@ -359,6 +365,16 @@ mod tests {
         assert_eq!(evaluation, Object::Integer(10));
 
         let input = "9; return 2 * 5; 9;";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation, Object::Integer(10));
+
+        let input = "\
+        if (10 > 1) {\
+            if (10 > 1) {\
+                return 10;\
+            }\
+            return 1;\
+         }";
         let evaluation = parse_and_eval_program(input);
         assert_eq!(evaluation, Object::Integer(10));
     }
