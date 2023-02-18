@@ -1,21 +1,25 @@
-use std::collections::HashMap;
+use crate::error::Error;
 use crate::object::Object;
+use std::collections::HashMap;
 
 // TODO: is this documentation up to date?
 /// Hashmap to keep track of identifiers and function definitions
 pub(crate) struct Environment {
-   store: HashMap<String, Object>
+    store: HashMap<String, Object>,
 }
 
 impl Environment {
     pub(crate) fn new() -> Self {
         Self {
-            store: HashMap::new()
+            store: HashMap::new(),
         }
     }
 
-    pub(crate) fn get(&self, name: String) -> Option<&Object> {
-        self.store.get(name.as_str())
+    pub(crate) fn get(&self, name: String) -> Result<Object, Error> {
+        self.store
+            .get(name.as_str())
+            .cloned()
+            .ok_or(Error::IdentifierNotFound(name))
     }
 
     pub(crate) fn set(&mut self, name: String, obj: Object) -> Option<Object> {

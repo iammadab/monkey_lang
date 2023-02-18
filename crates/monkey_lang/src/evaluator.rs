@@ -21,7 +21,10 @@ pub fn eval_program_string_output(program: &Program) -> Result<String, Error> {
 }
 
 /// Evaluate satements
-fn eval_statements(environment: &mut Environment, statements: &Vec<Statement>) -> Result<EvaluationValue, Error> {
+fn eval_statements(
+    environment: &mut Environment,
+    statements: &Vec<Statement>,
+) -> Result<EvaluationValue, Error> {
     let mut evaluation: EvaluationValue = Object::Null.into();
     for statement in statements {
         match statement {
@@ -36,10 +39,10 @@ fn eval_statements(environment: &mut Environment, statements: &Vec<Statement>) -
                 evaluation.is_return_value = true;
                 break;
             }
-            Statement::Let { identifier: name, value } => {
-                // what are we doing here??
-                // we need to store the identifier and value to some state
-                todo!()
+            Statement::Let { identifier, value } => {
+                let value = eval_expression(environment, value)?;
+                environment.set(identifier.to_owned(), value.object);
+                evaluation = Object::Null.into();
             }
         }
     }
@@ -47,7 +50,10 @@ fn eval_statements(environment: &mut Environment, statements: &Vec<Statement>) -
 }
 
 /// Evaluates an expression
-fn eval_expression(environment: &mut Environment, expression: &Expression) -> Result<EvaluationValue, Error> {
+fn eval_expression(
+    environment: &mut Environment,
+    expression: &Expression,
+) -> Result<EvaluationValue, Error> {
     match expression {
         Expression::IntegerLiteral(value) => Ok(Object::Integer(value.to_owned()).into()),
         Expression::Boolean(bool) => Ok(Object::Boolean(bool.to_owned()).into()),
@@ -69,6 +75,9 @@ fn eval_expression(environment: &mut Environment, expression: &Expression) -> Re
             consequence,
             alternative,
         } => eval_if_expression(environment, condition, consequence, alternative),
+        Expression::Identifier(identiifier) => {
+            Ok(environment.get(identiifier.to_owned())?.clone().into())
+        }
         _ => todo!(),
     }
 }

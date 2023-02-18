@@ -8,7 +8,10 @@ pub(crate) enum Statement {
     /// Represents let statements of the form
     /// let <identifier> = <expression>;
     /// e.g let a = 2;
-    Let { identifier: String, value: Expression },
+    Let {
+        identifier: String,
+        value: Expression,
+    },
     /// Represents statements of the form
     /// return <expression>;
     /// e.g return 2 + 2;
@@ -20,7 +23,10 @@ pub(crate) enum Statement {
 impl Display for Statement {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Statement::Let { identifier: name, value } => {
+            Statement::Let {
+                identifier: name,
+                value,
+            } => {
                 let statement = format!("let {name} = {value};");
                 f.write_str(&statement)
             }
