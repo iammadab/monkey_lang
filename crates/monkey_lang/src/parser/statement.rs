@@ -32,7 +32,7 @@ impl<'a> Parser<'a> {
         self.expect_next_token(TokenType::SEMICOLON)?;
 
         Ok(Statement::Let {
-            name: identifier_token.literal,
+            identifier: identifier_token.literal,
             value: expression,
         })
     }
@@ -102,21 +102,21 @@ mod tests {
         assert_eq!(
             program.statements[0],
             Statement::Let {
-                name: "x".to_string(),
+                identifier: "x".to_string(),
                 value: Expression::IntegerLiteral(5)
             }
         );
         assert_eq!(
             program.statements[1],
             Statement::Let {
-                name: "y".to_string(),
+                identifier: "y".to_string(),
                 value: Expression::IntegerLiteral(10)
             }
         );
         assert_eq!(
             program.statements[2],
             Statement::Let {
-                name: "foobar".to_string(),
+                identifier: "foobar".to_string(),
                 value: Expression::IntegerLiteral(838383)
             }
         );
@@ -200,7 +200,7 @@ mod tests {
                         right: Box::new(Expression::IntegerLiteral(3))
                     }),
                     Statement::Let {
-                        name: "a".to_string(),
+                        identifier: "a".to_string(),
                         value: Expression::IntegerLiteral(5)
                     }
                 ]

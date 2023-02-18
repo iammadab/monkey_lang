@@ -27,4 +27,6 @@ pub enum Error {
     },
     #[error("unknown operator: {0}")]
     UnknownOperator(String),
+    #[error("identifier not found: {0}")]
+    IdentifierNotFound(String),
 }

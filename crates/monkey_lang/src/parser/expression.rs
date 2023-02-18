@@ -295,11 +295,11 @@ mod tests {
                 body: Block {
                     statements: vec![
                         Statement::Let {
-                            name: "a".to_string(),
+                            identifier: "a".to_string(),
                             value: Expression::IntegerLiteral(2),
                         },
                         Statement::Let {
-                            name: "b".to_string(),
+                            identifier: "b".to_string(),
                             value: Expression::Infix {
                                 left: Box::new(Expression::Identifier("a".to_string())),
                                 operator: InfixOperator::PLUS,

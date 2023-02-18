@@ -1,4 +1,5 @@
 use crate::ast::{Block, Expression, InfixOperator, PrefixOperator, Program, Statement};
+use crate::environment::Environment;
 use crate::error::Error;
 use crate::object::{EvaluationValue, Object};
 
@@ -9,7 +10,8 @@ use crate::object::{EvaluationValue, Object};
 /// for each statement
 // TODO: this should also return a result
 fn eval_program(program: &Program) -> Result<Object, Error> {
-    Ok(eval_statements(&program.statements)?.object)
+    let mut enviroment = Environment::new();
+    Ok(eval_statements(&mut enviroment, &program.statements)?.object)
 }
 
 /// Same as eval_program but converts object to string after
@@ -19,56 +21,61 @@ pub fn eval_program_string_output(program: &Program) -> Result<String, Error> {
 }
 
 /// Evaluate satements
-fn eval_statements(statements: &Vec<Statement>) -> Result<EvaluationValue, Error> {
+fn eval_statements(environment: &mut Environment, statements: &Vec<Statement>) -> Result<EvaluationValue, Error> {
     let mut evaluation: EvaluationValue = Object::Null.into();
     for statement in statements {
         match statement {
             Statement::Expression(expr) => {
-                evaluation = eval_expression(expr)?;
+                evaluation = eval_expression(environment, expr)?;
                 if evaluation.is_return_value {
                     break;
                 }
             }
             Statement::Return { return_value } => {
-                evaluation = eval_expression(return_value)?;
+                evaluation = eval_expression(environment, return_value)?;
                 evaluation.is_return_value = true;
                 break;
             }
-            _ => evaluation = Object::Null.into(),
+            Statement::Let { identifier: name, value } => {
+                // what are we doing here??
+                // we need to store the identifier and value to some state
+                todo!()
+            }
         }
     }
     Ok(evaluation)
 }
 
 /// Evaluates an expression
-fn eval_expression(expression: &Expression) -> Result<EvaluationValue, Error> {
+fn eval_expression(environment: &mut Environment, expression: &Expression) -> Result<EvaluationValue, Error> {
     match expression {
         Expression::IntegerLiteral(value) => Ok(Object::Integer(value.to_owned()).into()),
         Expression::Boolean(bool) => Ok(Object::Boolean(bool.to_owned()).into()),
         Expression::Prefix { operator, right } => {
-            let right_eval = eval_expression(right)?;
-            eval_prefix_expression(operator, right_eval.object)
+            let right_eval = eval_expression(environment, right)?;
+            eval_prefix_expression(environment, operator, right_eval.object)
         }
         Expression::Infix {
             left,
             operator,
             right,
         } => {
-            let left_eval = eval_expression(left)?;
-            let right_eval = eval_expression(right)?;
-            eval_infix_expression(operator, left_eval.object, right_eval.object)
+            let left_eval = eval_expression(environment, left)?;
+            let right_eval = eval_expression(environment, right)?;
+            eval_infix_expression(environment, operator, left_eval.object, right_eval.object)
         }
         Expression::If {
             condition,
             consequence,
             alternative,
-        } => eval_if_expression(condition, consequence, alternative),
+        } => eval_if_expression(environment, condition, consequence, alternative),
         _ => todo!(),
     }
 }
 
 /// Evaluates a prefix expression
 fn eval_prefix_expression(
+    environment: &mut Environment,
     operator: &PrefixOperator,
     right: Object,
 ) -> Result<EvaluationValue, Error> {
@@ -108,6 +115,7 @@ fn eval_minus_prefix_operator(obj: Object) -> Result<EvaluationValue, Error> {
 
 /// Evaluates an infix expression
 fn eval_infix_expression(
+    environment: &mut Environment,
     operator: &InfixOperator,
     left: Object,
     right: Object,
@@ -162,15 +170,16 @@ fn eval_boolean_infix_expression(
 
 /// Evaluates an if expression
 fn eval_if_expression(
+    environment: &mut Environment,
     condition: &Box<Expression>,
     consequence: &Block,
     alternative: &Option<Block>,
 ) -> Result<EvaluationValue, Error> {
-    let condition_eval = eval_expression(condition)?.object;
+    let condition_eval = eval_expression(environment, condition)?.object;
     if condition_eval.is_truthy() {
-        eval_block(consequence)
+        eval_block(environment, consequence)
     } else if let Some(alternative) = alternative {
-        eval_block(alternative)
+        eval_block(environment, alternative)
     } else {
         Ok(Object::Null.into())
     }
@@ -178,8 +187,8 @@ fn eval_if_expression(
 
 /// Evaluates a block and returns the evaluation of the last statement
 /// in the block
-fn eval_block(block: &Block) -> Result<EvaluationValue, Error> {
-    eval_statements(&block.statements)
+fn eval_block(enviroment: &mut Environment, block: &Block) -> Result<EvaluationValue, Error> {
+    eval_statements(enviroment, &block.statements)
 }
 
 #[cfg(test)]
@@ -481,5 +490,20 @@ mod tests {
             evaluation,
             Err(Error::UnknownOperator("BOOLEAN + BOOLEAN".to_string()))
         );
+
+        let input = "foobar";
+        let evaluation = parse_and_eval_program_possible_error(input);
+        assert!(evaluation.is_err());
+        assert_eq!(
+            evaluation,
+            Err(Error::IdentifierNotFound("foobar".to_string()))
+        );
+    }
+
+    #[test]
+    fn eval_let_statements() {
+        let input = "let a = 5; a;";
+        let evaluation = parse_and_eval_program(input);
+        assert_eq!(evaluation, Object::Integer(5));
     }
 }

@@ -8,7 +8,7 @@ pub(crate) enum Statement {
     /// Represents let statements of the form
     /// let <identifier> = <expression>;
     /// e.g let a = 2;
-    Let { name: String, value: Expression },
+    Let { identifier: String, value: Expression },
     /// Represents statements of the form
     /// return <expression>;
     /// e.g return 2 + 2;
@@ -20,7 +20,7 @@ pub(crate) enum Statement {
 impl Display for Statement {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Statement::Let { name, value } => {
+            Statement::Let { identifier: name, value } => {
                 let statement = format!("let {name} = {value};");
                 f.write_str(&statement)
             }
@@ -240,7 +240,7 @@ mod tests {
     fn ast_as_string() {
         let mut program = Program::new();
         program.statements.push(Statement::Let {
-            name: "my_var".to_string(),
+            identifier: "my_var".to_string(),
             value: Expression::Identifier("another_var".to_string()),
         });
         program.statements.push(Statement::Return {
