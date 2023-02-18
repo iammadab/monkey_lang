@@ -1,5 +1,6 @@
+// TODO: remove unnecessary pub
 pub(crate) mod ast;
-mod environment;
+pub mod environment;
 pub(crate) mod error;
 pub mod evaluator;
 pub mod lexer;

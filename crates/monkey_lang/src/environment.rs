@@ -4,12 +4,12 @@ use std::collections::HashMap;
 
 // TODO: is this documentation up to date?
 /// Hashmap to keep track of identifiers and function definitions
-pub(crate) struct Environment {
+pub struct Environment {
     store: HashMap<String, Object>,
 }
 
 impl Environment {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             store: HashMap::new(),
         }

@@ -9,14 +9,13 @@ use crate::object::{EvaluationValue, Object};
 /// Evaluates a vector of statements, returning a corresponding vector of objects
 /// for each statement
 // TODO: this should also return a result
-fn eval_program(program: &Program) -> Result<Object, Error> {
-    let mut enviroment = Environment::new();
-    Ok(eval_statements(&mut enviroment, &program.statements)?.object)
+fn eval_program(environment: &mut Environment, program: &Program) -> Result<Object, Error> {
+    Ok(eval_statements(environment, &program.statements)?.object)
 }
 
 /// Same as eval_program but converts object to string after
-pub fn eval_program_string_output(program: &Program) -> Result<String, Error> {
-    let evaluation = eval_program(program)?;
+pub fn eval_program_string_output(environment: &mut Environment, program: &Program) -> Result<String, Error> {
+    let evaluation = eval_program(environment, program)?;
     Ok(evaluation.to_string())
 }
 
@@ -75,8 +74,8 @@ fn eval_expression(
             consequence,
             alternative,
         } => eval_if_expression(environment, condition, consequence, alternative),
-        Expression::Identifier(identiifier) => {
-            Ok(environment.get(identiifier.to_owned())?.clone().into())
+        Expression::Identifier(identifier) => {
+            Ok(environment.get(identifier.to_owned())?.clone().into())
         }
         _ => todo!(),
     }
@@ -203,6 +202,7 @@ fn eval_block(enviroment: &mut Environment, block: &Block) -> Result<EvaluationV
 #[cfg(test)]
 mod tests {
     use crate::ast::Expression;
+    use crate::environment::Environment;
     use crate::error::Error;
     use crate::evaluator::{eval_expression, eval_program};
     use crate::lexer::Lexer;
@@ -213,7 +213,8 @@ mod tests {
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        eval_program(&program)
+        let mut environment = Environment::new();
+        eval_program(&mut environment, &program)
     }
 
     fn parse_and_eval_program(input: &str) -> Object {
