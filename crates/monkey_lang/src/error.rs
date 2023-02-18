@@ -1,3 +1,5 @@
+use crate::ast::InfixOperator;
+use crate::object::Object;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -15,4 +17,11 @@ pub enum Error {
     InvalidPrefixOperator(String),
     #[error("failed to convert {0} to infix operator")]
     InvalidInfixOperator(String),
+
+    #[error("type mismatch: {left} {operator} {right}")]
+    TypeMismatch {
+        left: String,
+        operator: String,
+        right: String,
+    },
 }

@@ -26,7 +26,8 @@ fn main() -> io::Result<()> {
         // TODO: should we be evaluating statements instead??
         let evaluation = eval_program_string_output(&program);
 
-        println!("{}", evaluation);
+        // TODO: remove unwrap
+        println!("{}", evaluation.unwrap());
 
         input.clear();
     }

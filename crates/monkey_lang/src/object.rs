@@ -53,4 +53,12 @@ impl Object {
             Object::Integer(val) => val != &0,
         }
     }
+
+    pub(crate) fn to_type_string(&self) -> String {
+        match self {
+            Object::Boolean(_) => "BOOLEAN".to_string(),
+            Object::Integer(_) => "INTEGER".to_string(),
+            Object::Null => "NULL".to_string(),
+        }
+    }
 }

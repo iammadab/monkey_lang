@@ -1,4 +1,5 @@
 use crate::ast::{Block, Expression, InfixOperator, PrefixOperator, Program, Statement};
+use crate::error::Error;
 use crate::object::{EvaluationValue, Object};
 
 // TODO: implement proper error handling
@@ -7,45 +8,45 @@ use crate::object::{EvaluationValue, Object};
 /// Evaluates a vector of statements, returning a corresponding vector of objects
 /// for each statement
 // TODO: this should also return a result
-fn eval_program(program: &Program) -> Object {
-    eval_statements(&program.statements).object
+fn eval_program(program: &Program) -> Result<Object, Error> {
+    Ok(eval_statements(&program.statements)?.object)
 }
 
 /// Same as eval_program but converts object to string after
-pub fn eval_program_string_output(program: &Program) -> String {
-    let evaluation = eval_program(program);
-    evaluation.to_string()
+pub fn eval_program_string_output(program: &Program) -> Result<String, Error> {
+    let evaluation = eval_program(program)?;
+    Ok(evaluation.to_string())
 }
 
 /// Evaluate satements
-fn eval_statements(statements: &Vec<Statement>) -> EvaluationValue {
+fn eval_statements(statements: &Vec<Statement>) -> Result<EvaluationValue, Error> {
     let mut evaluation: EvaluationValue = Object::Null.into();
     for statement in statements {
         match statement {
             Statement::Expression(expr) => {
-                evaluation = eval_expression(expr);
+                evaluation = eval_expression(expr)?;
                 if evaluation.is_return_value {
                     break;
                 }
             }
             Statement::Return { return_value } => {
-                evaluation = eval_expression(return_value);
+                evaluation = eval_expression(return_value)?;
                 evaluation.is_return_value = true;
                 break;
             }
             _ => evaluation = Object::Null.into(),
         }
     }
-    evaluation
+    Ok(evaluation)
 }
 
 /// Evaluates an expression
-fn eval_expression(expression: &Expression) -> EvaluationValue {
+fn eval_expression(expression: &Expression) -> Result<EvaluationValue, Error> {
     match expression {
-        Expression::IntegerLiteral(value) => Object::Integer(value.to_owned()).into(),
-        Expression::Boolean(bool) => Object::Boolean(bool.to_owned()).into(),
+        Expression::IntegerLiteral(value) => Ok(Object::Integer(value.to_owned()).into()),
+        Expression::Boolean(bool) => Ok(Object::Boolean(bool.to_owned()).into()),
         Expression::Prefix { operator, right } => {
-            let right_eval = eval_expression(right);
+            let right_eval = eval_expression(right)?;
             eval_prefix_expression(operator, right_eval.object)
         }
         Expression::Infix {
@@ -53,8 +54,8 @@ fn eval_expression(expression: &Expression) -> EvaluationValue {
             operator,
             right,
         } => {
-            let left_eval = eval_expression(left);
-            let right_eval = eval_expression(right);
+            let left_eval = eval_expression(left)?;
+            let right_eval = eval_expression(right)?;
             eval_infix_expression(operator, left_eval.object, right_eval.object)
         }
         Expression::If {
@@ -67,14 +68,18 @@ fn eval_expression(expression: &Expression) -> EvaluationValue {
 }
 
 /// Evaluates a prefix expression
-fn eval_prefix_expression(operator: &PrefixOperator, right: Object) -> EvaluationValue {
+fn eval_prefix_expression(
+    operator: &PrefixOperator,
+    right: Object,
+) -> Result<EvaluationValue, Error> {
     match operator {
-        PrefixOperator::BANG => eval_bang_prefix_operator(right),
-        PrefixOperator::NEGATE => eval_minus_prefix_operator(right),
+        PrefixOperator::BANG => Ok(eval_bang_prefix_operator(right)),
+        PrefixOperator::NEGATE => Ok(eval_minus_prefix_operator(right)),
     }
 }
 
 /// Evaluates the bang operator on an object
+// TODO: can this return an error??
 fn eval_bang_prefix_operator(obj: Object) -> EvaluationValue {
     match obj {
         Object::Boolean(val) => Object::Boolean(!val).into(),
@@ -95,6 +100,7 @@ fn eval_bang_prefix_operator(obj: Object) -> EvaluationValue {
 }
 
 /// Evaluates the negation operator on an object
+// TODO: can this return an error??
 fn eval_minus_prefix_operator(obj: Object) -> EvaluationValue {
     match obj {
         Object::Integer(val) => Object::Integer(-1 * val).into(),
@@ -103,11 +109,23 @@ fn eval_minus_prefix_operator(obj: Object) -> EvaluationValue {
 }
 
 /// Evaluates an infix expression
-fn eval_infix_expression(operator: &InfixOperator, left: Object, right: Object) -> EvaluationValue {
+fn eval_infix_expression(
+    operator: &InfixOperator,
+    left: Object,
+    right: Object,
+) -> Result<EvaluationValue, Error> {
     match (left, right) {
-        (Object::Integer(a), Object::Integer(b)) => eval_integer_infix_expression(operator, a, b),
-        (Object::Boolean(a), Object::Boolean(b)) => eval_boolean_infix_expression(operator, a, b),
-        (_, _) => Object::Null.into(),
+        (Object::Integer(a), Object::Integer(b)) => {
+            Ok(eval_integer_infix_expression(operator, a, b))
+        }
+        (Object::Boolean(a), Object::Boolean(b)) => {
+            Ok(eval_boolean_infix_expression(operator, a, b))
+        }
+        (left, right) => Err(Error::TypeMismatch {
+            left: left.to_type_string(),
+            operator: operator.to_string(),
+            right: right.to_type_string(),
+        }),
     }
 }
 
@@ -148,36 +166,42 @@ fn eval_if_expression(
     condition: &Box<Expression>,
     consequence: &Block,
     alternative: &Option<Block>,
-) -> EvaluationValue {
-    let condition_eval = eval_expression(condition).object;
+) -> Result<EvaluationValue, Error> {
+    let condition_eval = eval_expression(condition)?.object;
     if condition_eval.is_truthy() {
         eval_block(consequence)
     } else if let Some(alternative) = alternative {
         eval_block(alternative)
     } else {
-        Object::Null.into()
+        // TODO: are we returning an error here??
+        Ok(Object::Null.into())
     }
 }
 
 /// Evaluates a block and returns the evaluation of the last statement
 /// in the block
-fn eval_block(block: &Block) -> EvaluationValue {
+fn eval_block(block: &Block) -> Result<EvaluationValue, Error> {
     eval_statements(&block.statements)
 }
 
 #[cfg(test)]
 mod tests {
     use crate::ast::Expression;
+    use crate::error::Error;
     use crate::evaluator::{eval_expression, eval_program};
     use crate::lexer::Lexer;
     use crate::object::Object;
     use crate::parser::Parser;
 
-    fn parse_and_eval_program(input: &str) -> Object {
+    fn parse_and_eval_program_possible_error(input: &str) -> Result<Object, Error> {
         let lexer = Lexer::new(input.chars());
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         eval_program(&program)
+    }
+
+    fn parse_and_eval_program(input: &str) -> Object {
+        parse_and_eval_program_possible_error(input).unwrap()
     }
 
     #[test]
@@ -391,8 +415,15 @@ mod tests {
     #[test]
     fn error_handling() {
         let input = "5 + true;";
-        let evaluation = parse_and_eval_program(input);
-        // TODO: convert to the actual types
-        assert_eq!(evaluation.to_string(), "type mismatch: 5 + true");
+        let evaluation = parse_and_eval_program_possible_error(input);
+        assert!(evaluation.is_err());
+        assert_eq!(
+            evaluation,
+            Err(Error::TypeMismatch {
+                left: "INTEGER".to_string(),
+                operator: "+".to_string(),
+                right: "BOOLEAN".to_string()
+            })
+        );
     }
 }
