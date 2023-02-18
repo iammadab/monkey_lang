@@ -74,12 +74,11 @@ fn eval_prefix_expression(
 ) -> Result<EvaluationValue, Error> {
     match operator {
         PrefixOperator::BANG => Ok(eval_bang_prefix_operator(right)),
-        PrefixOperator::NEGATE => Ok(eval_minus_prefix_operator(right)),
+        PrefixOperator::NEGATE => eval_minus_prefix_operator(right),
     }
 }
 
 /// Evaluates the bang operator on an object
-// TODO: can this return an error??
 fn eval_bang_prefix_operator(obj: Object) -> EvaluationValue {
     match obj {
         Object::Boolean(val) => Object::Boolean(!val).into(),
@@ -100,11 +99,10 @@ fn eval_bang_prefix_operator(obj: Object) -> EvaluationValue {
 }
 
 /// Evaluates the negation operator on an object
-// TODO: can this return an error??
-fn eval_minus_prefix_operator(obj: Object) -> EvaluationValue {
+fn eval_minus_prefix_operator(obj: Object) -> Result<EvaluationValue, Error> {
     match obj {
-        Object::Integer(val) => Object::Integer(-1 * val).into(),
-        _ => Object::Null.into(),
+        Object::Integer(val) => Ok(Object::Integer(-1 * val).into()),
+        _ => Err(Error::UnknownOperator(format!("-{}", obj.to_type_string()))),
     }
 }
 
@@ -118,9 +116,7 @@ fn eval_infix_expression(
         (Object::Integer(a), Object::Integer(b)) => {
             Ok(eval_integer_infix_expression(operator, a, b))
         }
-        (Object::Boolean(a), Object::Boolean(b)) => {
-            Ok(eval_boolean_infix_expression(operator, a, b))
-        }
+        (Object::Boolean(a), Object::Boolean(b)) => eval_boolean_infix_expression(operator, a, b),
         (left, right) => Err(Error::TypeMismatch {
             left: left.to_type_string(),
             operator: operator.to_string(),
@@ -152,12 +148,15 @@ fn eval_boolean_infix_expression(
     operator: &InfixOperator,
     left: bool,
     right: bool,
-) -> EvaluationValue {
+) -> Result<EvaluationValue, Error> {
     // TODO: add support for greater and less than
     match operator {
-        InfixOperator::EQUAL => Object::Boolean(left == right).into(),
-        InfixOperator::NOTEQUAL => Object::Boolean(left != right).into(),
-        _ => Object::Null.into(),
+        InfixOperator::EQUAL => Ok(Object::Boolean(left == right).into()),
+        InfixOperator::NOTEQUAL => Ok(Object::Boolean(left != right).into()),
+        _ => Err(Error::UnknownOperator(format!(
+            "BOOLEAN {} BOOLEAN",
+            operator
+        ))),
     }
 }
 
@@ -173,7 +172,6 @@ fn eval_if_expression(
     } else if let Some(alternative) = alternative {
         eval_block(alternative)
     } else {
-        // TODO: are we returning an error here??
         Ok(Object::Null.into())
     }
 }
@@ -424,6 +422,64 @@ mod tests {
                 operator: "+".to_string(),
                 right: "BOOLEAN".to_string()
             })
+        );
+
+        let input = "5 + true; 5;";
+        let evaluation = parse_and_eval_program_possible_error(input);
+        assert!(evaluation.is_err());
+        assert_eq!(
+            evaluation,
+            Err(Error::TypeMismatch {
+                left: "INTEGER".to_string(),
+                operator: "+".to_string(),
+                right: "BOOLEAN".to_string()
+            })
+        );
+
+        let input = "-true;";
+        let evaluation = parse_and_eval_program_possible_error(input);
+        assert!(evaluation.is_err());
+        assert_eq!(
+            evaluation,
+            Err(Error::UnknownOperator("-BOOLEAN".to_string()))
+        );
+
+        let input = "true + false;";
+        let evaluation = parse_and_eval_program_possible_error(input);
+        assert!(evaluation.is_err());
+        assert_eq!(
+            evaluation,
+            Err(Error::UnknownOperator("BOOLEAN + BOOLEAN".to_string()))
+        );
+
+        let input = "5; true + false; 5;";
+        let evaluation = parse_and_eval_program_possible_error(input);
+        assert!(evaluation.is_err());
+        assert_eq!(
+            evaluation,
+            Err(Error::UnknownOperator("BOOLEAN + BOOLEAN".to_string()))
+        );
+
+        let input = "if (10 > 1) { true + false; }";
+        let evaluation = parse_and_eval_program_possible_error(input);
+        assert!(evaluation.is_err());
+        assert_eq!(
+            evaluation,
+            Err(Error::UnknownOperator("BOOLEAN + BOOLEAN".to_string()))
+        );
+
+        let input = "\
+        if (10 > 1) {\
+            if (10 > 1) {\
+                true + false;\
+            }\
+            return 1;\
+         }";
+        let evaluation = parse_and_eval_program_possible_error(input);
+        assert!(evaluation.is_err());
+        assert_eq!(
+            evaluation,
+            Err(Error::UnknownOperator("BOOLEAN + BOOLEAN".to_string()))
         );
     }
 }
