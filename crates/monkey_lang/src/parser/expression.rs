@@ -64,7 +64,7 @@ impl<'a> Parser<'a> {
 
         Ok(Expression::Infix {
             left: Box::new(left_expression),
-            operator: operator_token.literal,
+            operator: operator_token.literal.try_into()?,
             right: Box::new(right_expression),
         })
     }
@@ -92,7 +92,7 @@ impl<'a> Parser<'a> {
         let prefix_token = self.next_token()?;
         let right_expression = self.parse_expression(Precedence::PREFIX)?;
         Ok(Expression::Prefix {
-            operator: prefix_token.literal,
+            operator: prefix_token.literal.try_into()?,
             right: Box::new(right_expression),
         })
     }
@@ -188,7 +188,7 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Block, Expression, Statement};
+    use crate::ast::{Block, Expression, InfixOperator, PrefixOperator, Statement};
     use crate::lexer::Lexer;
     use crate::parser::util::Precedence;
     use crate::parser::Parser;
@@ -242,7 +242,7 @@ mod tests {
             Expression::If {
                 condition: Box::new(Expression::Infix {
                     left: Box::new(Expression::Identifier("x".to_string())),
-                    operator: "<".to_string(),
+                    operator: InfixOperator::LESSTHAN,
                     right: Box::new(Expression::Identifier("y".to_string()))
                 }),
                 consequence: Block {
@@ -273,7 +273,7 @@ mod tests {
                 body: Block {
                     statements: vec![Statement::Expression(Expression::Infix {
                         left: Box::new(Expression::Identifier("x".to_string())),
-                        operator: "+".to_string(),
+                        operator: InfixOperator::PLUS,
                         right: Box::new(Expression::Identifier("y".to_string()))
                     })]
                 }
@@ -295,14 +295,14 @@ mod tests {
                 body: Block {
                     statements: vec![
                         Statement::Let {
-                            name: "a".to_string(),
+                            identifier: "a".to_string(),
                             value: Expression::IntegerLiteral(2),
                         },
                         Statement::Let {
-                            name: "b".to_string(),
+                            identifier: "b".to_string(),
                             value: Expression::Infix {
                                 left: Box::new(Expression::Identifier("a".to_string())),
-                                operator: "+".to_string(),
+                                operator: InfixOperator::PLUS,
                                 right: Box::new(Expression::IntegerLiteral(1))
                             }
                         }
@@ -372,12 +372,12 @@ mod tests {
                     Box::new(Expression::IntegerLiteral(1)),
                     Box::new(Expression::Infix {
                         left: Box::new(Expression::IntegerLiteral(2)),
-                        operator: "*".to_string(),
+                        operator: InfixOperator::MULTIPLY,
                         right: Box::new(Expression::IntegerLiteral(3)),
                     }),
                     Box::new(Expression::Infix {
                         left: Box::new(Expression::IntegerLiteral(4)),
-                        operator: "+".to_string(),
+                        operator: InfixOperator::PLUS,
                         right: Box::new(Expression::IntegerLiteral(5)),
                     }),
                 ]
@@ -395,7 +395,7 @@ mod tests {
         assert_eq!(
             expression,
             Expression::Prefix {
-                operator: "!".to_string(),
+                operator: PrefixOperator::BANG,
                 right: Box::new(Expression::Identifier("wanted".to_string()))
             }
         );
@@ -408,7 +408,7 @@ mod tests {
         assert_eq!(
             expression,
             Expression::Prefix {
-                operator: "-".to_string(),
+                operator: PrefixOperator::NEGATE,
                 right: Box::new(Expression::IntegerLiteral(15))
             }
         );
@@ -421,7 +421,7 @@ mod tests {
         assert_eq!(
             expression,
             Expression::Prefix {
-                operator: "!".to_string(),
+                operator: PrefixOperator::BANG,
                 right: Box::new(Expression::Boolean(true))
             }
         );
@@ -434,7 +434,7 @@ mod tests {
         assert_eq!(
             expression,
             Expression::Prefix {
-                operator: "!".to_string(),
+                operator: PrefixOperator::BANG,
                 right: Box::new(Expression::Boolean(false))
             }
         );

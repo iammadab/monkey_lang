@@ -1,6 +1,6 @@
-use crate::token::Token;
+use crate::error::Error;
+use crate::token::{Token, TokenType};
 use std::fmt::{format, Debug, Display, Formatter};
-use thiserror::__private::DisplayAsDisplay;
 
 /// Enum representing the different type of statements we handle
 #[derive(Debug, PartialEq)]
@@ -8,7 +8,10 @@ pub(crate) enum Statement {
     /// Represents let statements of the form
     /// let <identifier> = <expression>;
     /// e.g let a = 2;
-    Let { name: String, value: Expression },
+    Let {
+        identifier: String,
+        value: Expression,
+    },
     /// Represents statements of the form
     /// return <expression>;
     /// e.g return 2 + 2;
@@ -20,7 +23,10 @@ pub(crate) enum Statement {
 impl Display for Statement {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Statement::Let { name, value } => {
+            Statement::Let {
+                identifier: name,
+                value,
+            } => {
                 let statement = format!("let {name} = {value};");
                 f.write_str(&statement)
             }
@@ -58,14 +64,14 @@ pub(crate) enum Expression {
     /// <prefix><expression>
     /// e.g. -10 where - is the operator and 10 is the right expression
     Prefix {
-        operator: String,
+        operator: PrefixOperator,
         right: Box<Expression>,
     },
     /// Hods an infix expression of the form
     /// <expression><operator><expression>
     Infix {
         left: Box<Expression>,
-        operator: String,
+        operator: InfixOperator,
         right: Box<Expression>,
     },
     /// Represents a boolean value i.e true or false
@@ -130,6 +136,82 @@ impl Display for Expression {
     }
 }
 
+/// Prefix operators
+#[derive(Debug, PartialEq)]
+pub enum PrefixOperator {
+    BANG,
+    NEGATE,
+}
+
+impl Display for PrefixOperator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PrefixOperator::BANG => f.write_str("!"),
+            PrefixOperator::NEGATE => f.write_str("-"),
+        }
+    }
+}
+
+// TODO: tie it to the token type not the literal
+impl TryFrom<String> for PrefixOperator {
+    type Error = Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            "!" => Ok(PrefixOperator::BANG),
+            "-" => Ok(PrefixOperator::NEGATE),
+            _ => Err(Error::InvalidPrefixOperator(value.clone())),
+        }
+    }
+}
+
+/// Infix operators
+#[derive(Debug, PartialEq)]
+pub enum InfixOperator {
+    // TODO: add support for <= and >=
+    PLUS,
+    MINUS,
+    MULTIPLY,
+    DIVIDE,
+    GREATERTHAN,
+    LESSTHAN,
+    EQUAL,
+    NOTEQUAL,
+}
+
+impl Display for InfixOperator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InfixOperator::PLUS => f.write_str("+"),
+            InfixOperator::MINUS => f.write_str("-"),
+            InfixOperator::MULTIPLY => f.write_str("*"),
+            InfixOperator::DIVIDE => f.write_str("/"),
+            InfixOperator::GREATERTHAN => f.write_str(">"),
+            InfixOperator::LESSTHAN => f.write_str("<"),
+            InfixOperator::EQUAL => f.write_str("=="),
+            InfixOperator::NOTEQUAL => f.write_str("!="),
+        }
+    }
+}
+
+impl TryFrom<String> for InfixOperator {
+    type Error = Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            "+" => Ok(InfixOperator::PLUS),
+            "-" => Ok(InfixOperator::MINUS),
+            "*" => Ok(InfixOperator::MULTIPLY),
+            "/" => Ok(InfixOperator::DIVIDE),
+            ">" => Ok(InfixOperator::GREATERTHAN),
+            "<" => Ok(InfixOperator::LESSTHAN),
+            "==" => Ok(InfixOperator::EQUAL),
+            "!=" => Ok(InfixOperator::NOTEQUAL),
+            _ => Err(Error::InvalidInfixOperator(value.clone())),
+        }
+    }
+}
+
 /// Represents the program as a series of statements
 pub struct Program {
     pub(crate) statements: Vec<Statement>,
@@ -164,7 +246,7 @@ mod tests {
     fn ast_as_string() {
         let mut program = Program::new();
         program.statements.push(Statement::Let {
-            name: "my_var".to_string(),
+            identifier: "my_var".to_string(),
             value: Expression::Identifier("another_var".to_string()),
         });
         program.statements.push(Statement::Return {
